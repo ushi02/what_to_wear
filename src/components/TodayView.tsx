@@ -57,11 +57,15 @@ export function TodayView({ place, items, onChangePlace, onWishlist }: Props) {
   const rec = useMemo(() => (day && day.hours.length ? recommend(day, items, lastYear) : undefined), [day, items, lastYear])
 
   const placeButton = (
-    <button className="hero-place" onClick={onChangePlace} title={t('city.change')}>
-      {flag(place.cc)} {placeName(place)}
-      {place.cc && !place.current && <span className="hero-country"> · {country(place.cc)}</span>}
-      <span className="caret">▾</span>
-    </button>
+    <div className="hero-place-row">
+      <button className="hero-place" onClick={onChangePlace}>
+        {flag(place.cc)} {placeName(place)}
+        {place.cc && !place.current && <span className="hero-country"> · {country(place.cc)}</span>}
+      </button>
+      <button className="hero-change" onClick={onChangePlace}>
+        🔄 {t('city.change')}
+      </button>
+    </div>
   )
 
   if (current?.error) {
