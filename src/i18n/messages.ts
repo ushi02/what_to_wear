@@ -36,6 +36,9 @@ const en = {
   'wx.dry': 'No rain expected',
   'wx.wind': 'Wind {w}',
   'wx.uv': 'UV {u}',
+  'wx.hourly': 'Hourly feels-like',
+  'wx.rainChance': 'Chance of rain',
+  'wx.hourTip': '{h} · feels {t} · rain {p}%',
 
   'cond.rain': 'Rainy',
   'cond.hot': 'Hot',
@@ -169,6 +172,9 @@ const zh: Dict = {
   'wx.dry': '全天无雨',
   'wx.wind': '风 {w}',
   'wx.uv': 'UV {u}',
+  'wx.hourly': '逐小时体感',
+  'wx.rainChance': '降水概率',
+  'wx.hourTip': '{h} · 体感 {t} · 降水 {p}%',
 
   'cond.rain': '有雨',
   'cond.hot': '炎热',

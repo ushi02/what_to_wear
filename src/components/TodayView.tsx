@@ -1,10 +1,11 @@
 import { ArrowsClockwise, Drop, Lightbulb, ShoppingBag, SunDim, Umbrella, Wind, WarningCircle, Check } from '@phosphor-icons/react'
 import { useEffect, useMemo, useState } from 'react'
 import { flag, useI18n, type Key } from '../i18n'
-import { RAIN_PROB, recommend } from '../lib/recommend'
+import { recommend } from '../lib/recommend'
 import { getForecast, getLastYear, OUT_END, OUT_START, WeatherError } from '../lib/weather'
 import type { DayWeather, Item, LastYearWeather, Place } from '../types'
-import { HourIcon, ItemIcon, SceneIcon } from './icons'
+import { HourlyChart } from './HourlyChart'
+import { ItemIcon, SceneIcon } from './icons'
 import { WeatherScene, type Scene } from './WeatherScene'
 
 interface Props {
@@ -16,7 +17,7 @@ interface Props {
 
 export function TodayView({ place, items, onChangePlace, onWishlist }: Props) {
   const i18n = useI18n()
-  const { t, msg, temp, hour, hourShort, itemName, placeName, country } = i18n
+  const { t, msg, temp, itemName, placeName, country } = i18n
 
   // 结果带上请求时的 key，换城市/换天后旧结果自动失效，不用在 effect 里手动清空
   const placeKey = `${place.lat},${place.lon}`
@@ -93,7 +94,6 @@ export function TodayView({ place, items, onChangePlace, onWishlist }: Props) {
   }
 
   const s = rec.summary
-  const maxProb = Math.max(...day.hours.map((h) => h.precipProb))
   // 下雨但很冷就画雪；只有看今天、且天已经黑了才用夜景
   const scene: Scene = s.condition === 'rain' && s.tempMax <= 2 ? 'snow' : s.condition
   const nowHour = new Date().getHours()
@@ -130,19 +130,7 @@ export function TodayView({ place, items, onChangePlace, onWishlist }: Props) {
           <span><SunDim weight="fill" /> {t('wx.uv', { u: s.maxUv })}</span>
         </div>
 
-        <div className="hourly" role="list">
-          {day.hours.map((h) => (
-            <div key={h.hour} className="hour" role="listitem" title={`${hour(h.hour)} · ${temp(h.feels)} · ${h.precipProb}%`}>
-              <span className="hour-t">{temp(h.feels, false)}</span>
-              <span className="hour-i" aria-hidden><HourIcon h={h} /></span>
-              <span className="hour-bar">
-                <span style={{ height: `${Math.max(h.precipProb, 4)}%` }} className={h.precipProb >= RAIN_PROB ? 'wet' : ''} />
-              </span>
-              <span className="hour-p">{maxProb > 0 ? `${h.precipProb}%` : ''}</span>
-              <span className="hour-h">{hourShort(h.hour)}</span>
-            </div>
-          ))}
-        </div>
+        <HourlyChart hours={day.hours} />
       </section>
 
       <section className="section">
