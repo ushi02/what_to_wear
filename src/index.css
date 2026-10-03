@@ -20,7 +20,12 @@
   --c-shoes: #c4610f; --c-shoes-bg: #fff0e0;
   --c-accessory: #c2367a; --c-accessory-bg: #fde8f2;
   color-scheme: light;
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', 'Hiragino Sans', 'PingFang SC', 'Noto Sans CJK SC', 'Noto Sans JP', 'Microsoft YaHei', sans-serif;
+  --font-body: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', 'PingFang SC', 'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif;
+  /* 标题和数字用 Outfit；中文字形 Outfit 没有，会落到后面的系统字体 */
+  --font-display: 'Outfit Variable', 'PingFang SC', 'Noto Sans CJK SC', 'Microsoft YaHei', system-ui, sans-serif;
+  /* 字号阶梯 */
+  --fs-xs: 0.75rem; --fs-sm: 0.85rem; --fs-md: 1rem; --fs-lg: 1.15rem; --fs-xl: 1.6rem;
+  font-family: var(--font-body);
   line-height: 1.5;
   color: var(--text);
   background: var(--bg);
@@ -56,6 +61,8 @@ svg { flex-shrink: 0; }
 button svg, h2 svg, .hero-sub svg, .hero-msg svg, .chip svg, .muted svg { vertical-align: -0.15em; }
 body { margin: 0; background: var(--bg); }
 h1, h2, p { margin: 0; }
+h1, h2, .hero-temp, .hero-cond, .hour-t, .tile-name, .tile-cat, .tabs button, .seg button, .hero-place { font-family: var(--font-display); }
+.hero-temp, .hour-t, .hero-side { font-variant-numeric: tabular-nums; }
 
 .app { max-width: 600px; margin: 0 auto; padding: 12px 16px 64px; }
 
@@ -100,16 +107,16 @@ input, select {
 
 /* ---------- top bar & tabs ---------- */
 .topbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 8px 0 12px; }
-.topbar h1 { font-size: 1.35rem; font-weight: 800; letter-spacing: -0.01em; }
+.topbar h1 { font-size: var(--fs-xl); font-weight: 700; letter-spacing: -0.03em; }
 .settings { display: flex; gap: 8px; }
 
 .tabs { display: flex; gap: 6px; margin-bottom: 14px; overflow-x: auto; }
-.tabs button { white-space: nowrap; color: var(--muted); font-weight: 600; padding: 8px 14px; border-radius: 999px; }
+.tabs button { white-space: nowrap; color: var(--muted); font-weight: 550; font-size: var(--fs-md); padding: 8px 14px; border-radius: 999px; }
 .tabs button.on { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
 
 /* ---------- cards ---------- */
 .card { background: var(--surface); border-radius: var(--radius); padding: 16px 18px; margin: 14px 0; box-shadow: var(--shadow); }
-.card h2, .section h2 { font-size: 1rem; font-weight: 700; margin-bottom: 10px; }
+.card h2, .section h2 { font-size: var(--fs-lg); font-weight: 650; letter-spacing: -0.01em; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
 .section { margin: 22px 0 8px; }
 
 /* ---------- city picker ---------- */
@@ -201,7 +208,7 @@ input, select {
 }
 
 .hero-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
-.hero-place { color: #fff; font-weight: 700; font-size: 1.05rem; padding: 4px 8px 4px 2px; }
+.hero-place { color: #fff; font-weight: 600; font-size: var(--fs-lg); padding: 4px 8px 4px 2px; }
 .hero-country { font-weight: 400; opacity: 0.8; }
 .hero-place-row { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
 .hero-change { display: inline-flex; align-items: center; gap: 4px; color: #fff; font-size: 0.8rem; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: rgb(255 255 255 / 0.2); backdrop-filter: blur(8px); }
@@ -210,15 +217,15 @@ input, select {
 
 .hero-main { display: flex; align-items: center; gap: 12px; margin: 14px 0 6px; }
 .hero-icon { display: flex; line-height: 1; filter: drop-shadow(0 6px 14px rgb(0 0 0 / 0.18)); }
-.hero-temp { font-size: 4.2rem; font-weight: 300; line-height: 1; letter-spacing: -0.04em; }
+.hero-temp { font-size: 5rem; font-weight: 250; line-height: 0.9; letter-spacing: -0.05em; }
 .hero-side { font-size: 0.9rem; opacity: 0.92; line-height: 1.45; }
-.hero-cond { font-weight: 700; font-size: 1rem; opacity: 1; }
+.hero-cond { font-weight: 600; font-size: var(--fs-lg); opacity: 1; margin-bottom: 2px; }
 .hero-sub { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 0.88rem; opacity: 0.95; margin: 8px 2px 12px; }
 
 .hourly { display: flex; gap: 2px; overflow-x: auto; padding: 10px 2px 2px; border-top: 1px solid rgb(255 255 255 / 0.2); scrollbar-width: none; }
 .hourly::-webkit-scrollbar { display: none; }
 .hour { flex: 1 0 38px; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 0.78rem; }
-.hour-t { font-weight: 600; font-size: 0.85rem; }
+.hour-t { font-weight: 500; font-size: var(--fs-sm); }
 .hour-i { display: flex; height: 18px; opacity: 0.95; }
 .hour-bar { width: 8px; height: 34px; border-radius: 4px; background: rgb(255 255 255 / 0.15); display: flex; align-items: flex-end; overflow: hidden; }
 .hour-bar span { width: 100%; background: rgb(255 255 255 / 0.55); border-radius: 4px; }
@@ -240,8 +247,8 @@ input, select {
 .cat-accessory { --c: var(--c-accessory); --c-bg: var(--c-accessory-bg); }
 /* 黑色款：不管亮暗模式都画成深色 */
 .is-dark { --c: #1d2027; --c-bg: #dcdee5; }
-.tile-cat { font-size: 0.72rem; font-weight: 600; color: var(--muted); background: var(--surface-2); border-radius: 999px; padding: 2px 8px; }
-.tile-name { font-weight: 700; font-size: 0.98rem; margin-top: 6px; line-height: 1.3; }
+.tile-cat { font-size: var(--fs-xs); font-weight: 500; letter-spacing: 0.02em; color: var(--muted); background: var(--surface-2); border-radius: 999px; padding: 2px 8px; }
+.tile-name { font-weight: 600; font-size: var(--fs-md); margin-top: 8px; line-height: 1.3; }
 .tile .badge { align-self: flex-start; }
 .tile-reason { font-size: 0.8rem; color: var(--muted); line-height: 1.4; }
 
@@ -276,7 +283,7 @@ input, select {
 .empty-icon { color: var(--muted); margin-bottom: 8px; }
 
 @media (max-width: 420px) {
-  .hero-temp { font-size: 3.4rem; }
+  .hero-temp { font-size: 4rem; }
   .hero-icon svg { width: 50px; height: 50px; }
   .outfit { grid-template-columns: 1fr 1fr; }
   .closet { grid-template-columns: repeat(3, 1fr); }
