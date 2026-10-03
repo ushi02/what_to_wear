@@ -113,28 +113,87 @@ input, select {
 
 /* ---------- hero ---------- */
 .hero {
-  --g1: #7f8ea3; --g2: #4c5a70;
+  --g1: #8fa0b5; --g2: #6a7a92; --g3: #4d5b72;
   color: #fff; border-radius: 28px; padding: 18px 18px 14px;
-  background: linear-gradient(160deg, var(--g1), var(--g2));
-  box-shadow: 0 10px 30px -12px var(--g2);
-  position: relative; overflow: hidden;
+  background: linear-gradient(165deg, var(--g1), var(--g2) 55%, var(--g3));
+  box-shadow: 0 14px 34px -14px var(--g3);
+  position: relative; overflow: hidden; isolation: isolate;
+  transition: background 0.6s;
 }
-.hero::after { content: ''; position: absolute; inset: -40% -20% auto auto; width: 260px; height: 260px; border-radius: 50%; background: rgb(255 255 255 / 0.12); pointer-events: none; }
-.hero--sunny { --g1: #4fb3ff; --g2: #2a6fe0; }
-.hero--hot { --g1: #ffa24c; --g2: #ec5a55; }
-.hero--rain { --g1: #5f7894; --g2: #2f3e55; }
-.hero--cloudy { --g1: #8fa0b5; --g2: #56667e; }
-.hero--cold { --g1: #9cc3f5; --g2: #4f78b8; }
+.hero > :not(.scene) { position: relative; z-index: 1; }
+.hero--sunny { --g1: #6cc2ff; --g2: #3484f0; --g3: #1e5bd6; }
+.hero--hot { --g1: #ffc565; --g2: #ff8a4c; --g3: #e44d5e; }
+.hero--rain { --g1: #6f83a0; --g2: #435370; --g3: #263247; }
+.hero--snow { --g1: #c3d1e4; --g2: #8b9dba; --g3: #5c6e8c; }
+.hero--cloudy { --g1: #9aabbf; --g2: #6a7a92; --g3: #4d5b72; }
+.hero--cold { --g1: #a9d1ff; --g2: #6a94d4; --g3: #3f63a8; }
+.hero--night { --g1: #29336b; --g2: #141b42; --g3: #080b20; }
+.hero--night.hero--rain, .hero--night.hero--snow { --g1: #3a4560; --g2: #1d2436; --g3: #0d111c; }
 
-.hero-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; position: relative; z-index: 1; }
+/* ---------- weather scene ---------- */
+.scene { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.sun {
+  position: absolute; top: -70px; right: -50px; width: 220px; height: 220px; border-radius: 50%;
+  background: radial-gradient(circle, rgb(255 246 200 / 0.95) 0 18%, rgb(255 230 140 / 0.45) 30%, rgb(255 220 120 / 0) 68%);
+  animation: pulse 6s ease-in-out infinite;
+}
+.sun::after {
+  content: ''; position: absolute; inset: -40px; border-radius: 50%;
+  background: repeating-conic-gradient(from 0deg, rgb(255 255 255 / 0.13) 0 6deg, transparent 6deg 22deg);
+  mask: radial-gradient(circle, #000 25%, transparent 70%);
+  animation: spin 60s linear infinite;
+}
+.sun--hot { background: radial-gradient(circle, rgb(255 250 210 / 1) 0 20%, rgb(255 200 90 / 0.55) 34%, rgb(255 160 60 / 0) 70%); }
+.moon {
+  position: absolute; top: 74px; right: 34px; width: 50px; height: 50px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fffbe8, #e9e3c6 60%, #cfc8a6);
+  box-shadow: 0 0 40px 8px rgb(255 248 220 / 0.25);
+}
+.star { position: absolute; width: 2px; height: 2px; border-radius: 50%; background: #fff; animation: twinkle 3.5s ease-in-out infinite; }
+.star:nth-child(3n) { width: 3px; height: 3px; }
+.cloud {
+  position: absolute; height: 46px; border-radius: 999px; background: rgb(255 255 255 / 0.16); filter: blur(1px);
+  animation: drift linear infinite;
+}
+.cloud::before, .cloud::after { content: ''; position: absolute; background: inherit; border-radius: 50%; }
+.cloud::before { width: 54%; height: 150%; left: 14%; bottom: 30%; }
+.cloud::after { width: 38%; height: 120%; right: 14%; bottom: 35%; }
+.cloud--1 { width: 170px; top: 26px; animation-duration: 70s; animation-delay: -20s; }
+.cloud--2 { width: 120px; top: 92px; animation-duration: 90s; animation-delay: -55s; opacity: 0.8; }
+.cloud--3 { width: 210px; top: 150px; animation-duration: 110s; animation-delay: -5s; opacity: 0.6; }
+.drop {
+  position: absolute; top: -40px; width: 1.5px; height: 22px; border-radius: 1px;
+  background: linear-gradient(transparent, rgb(220 236 255 / 0.75));
+  animation: fall linear infinite;
+}
+.flake {
+  position: absolute; top: -12px; width: 6px; height: 6px; border-radius: 50%; background: rgb(255 255 255 / 0.9);
+  animation: snow linear infinite;
+}
+.flake:nth-child(2n) { width: 4px; height: 4px; opacity: 0.7; }
+.frost { position: absolute; width: 4px; height: 4px; background: #fff; transform: rotate(45deg); border-radius: 1px; box-shadow: 0 0 8px 2px rgb(255 255 255 / 0.5); animation: twinkle 4s ease-in-out infinite; }
+
+@keyframes pulse { 50% { transform: scale(1.06); opacity: 0.9; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes twinkle { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+@keyframes drift { from { transform: translateX(-260px); } to { transform: translateX(760px); } }
+@keyframes fall { from { transform: translate(0, 0) rotate(12deg); } to { transform: translate(-90px, 520px) rotate(12deg); } }
+@keyframes snow { 0% { transform: translate(0, 0); } 50% { transform: translate(14px, 260px); } 100% { transform: translate(-6px, 520px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .scene * { animation: none !important; }
+  .drop, .flake { display: none; }
+}
+
+.hero-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
 .hero-place { color: #fff; font-weight: 700; font-size: 1.05rem; padding: 4px 8px 4px 2px; }
 .hero-country { font-weight: 400; opacity: 0.8; }
-.hero-place-row { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; position: relative; z-index: 1; }
+.hero-place-row { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
 .hero-change { color: #fff; font-size: 0.8rem; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: rgb(255 255 255 / 0.2); backdrop-filter: blur(8px); }
 .hero-change:hover { background: rgb(255 255 255 / 0.3); }
 .hero-msg { margin: 28px 4px 18px; font-size: 1.05rem; opacity: 0.95; }
 
-.hero-main { display: flex; align-items: center; gap: 12px; margin: 14px 0 6px; position: relative; z-index: 1; }
+.hero-main { display: flex; align-items: center; gap: 12px; margin: 14px 0 6px; }
 .hero-icon { font-size: 3.2rem; line-height: 1; filter: drop-shadow(0 4px 10px rgb(0 0 0 / 0.15)); }
 .hero-temp { font-size: 4.2rem; font-weight: 300; line-height: 1; letter-spacing: -0.04em; }
 .hero-side { font-size: 0.9rem; opacity: 0.92; line-height: 1.45; }

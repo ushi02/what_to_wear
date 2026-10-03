@@ -3,6 +3,7 @@ import { flag, useI18n, type Key } from '../i18n'
 import { RAIN_PROB, recommend, type Condition } from '../lib/recommend'
 import { getForecast, getLastYear, OUT_END, OUT_START, WeatherError } from '../lib/weather'
 import type { DayWeather, HourWeather, Item, LastYearWeather, Place } from '../types'
+import { WeatherScene, type Scene } from './WeatherScene'
 
 interface Props {
   place: Place
@@ -95,10 +96,15 @@ export function TodayView({ place, items, onChangePlace, onWishlist }: Props) {
 
   const s = rec.summary
   const maxProb = Math.max(...day.hours.map((h) => h.precipProb))
+  // 下雨但很冷就画雪；只有看今天、且天已经黑了才用夜景
+  const scene: Scene = s.condition === 'rain' && s.tempMax <= 2 ? 'snow' : s.condition
+  const nowHour = new Date().getHours()
+  const night = dayIndex === 0 && (nowHour >= 18 || nowHour < 6)
 
   return (
     <>
-      <section className={`hero hero--${s.condition}`}>
+      <section className={`hero hero--${scene} ${night ? 'hero--night' : ''}`}>
+        <WeatherScene scene={scene} night={night} />
         <div className="hero-top">
           {placeButton}
           <div className="seg glass" role="tablist">
