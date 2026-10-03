@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useI18n, type Key } from '../i18n'
 import { CATEGORIES, type Item } from '../types'
+import { ItemIcon } from './icons'
 
 interface Props {
   items: Item[]
@@ -40,7 +41,7 @@ export function WardrobeView({ items, onDisown, onOwn, onWishlist, onAddCustom, 
             <div className="closet">
               {owned.map((i) => (
                 <div key={i.id} className="closet-item">
-                  <span className={`closet-emoji ${i.dark ? 'emoji-dark' : ''}`} aria-hidden>{i.emoji}</span>
+                  <span className={`closet-icon cat-${i.category} ${i.dark ? 'is-dark' : ''}`} aria-hidden><ItemIcon item={i} size={30} /></span>
                   <span className="closet-name">{itemName(i)}</span>
                   <button className="link small" onClick={() => (i.custom ? onRemoveCustom(i.id) : onDisown(i.id))}>
                     {t(i.custom ? 'wardrobe.delete' : 'wardrobe.dontHave')}
@@ -58,7 +59,7 @@ export function WardrobeView({ items, onDisown, onOwn, onWishlist, onAddCustom, 
           <div className="closet">
             {missing.map((i) => (
               <div key={i.id} className="closet-item off">
-                <span className={`closet-emoji ${i.dark ? 'emoji-dark' : ''}`} aria-hidden>{i.emoji}</span>
+                <span className={`closet-icon cat-${i.category} ${i.dark ? 'is-dark' : ''}`} aria-hidden><ItemIcon item={i} size={30} /></span>
                 <span className="closet-name">{itemName(i)}</span>
                 <span className="closet-actions">
                   {!i.wishlist && <button className="link small" onClick={() => onWishlist(i.id, true)}>+ {t('wardrobe.want')}</button>}
@@ -78,7 +79,7 @@ export function WardrobeView({ items, onDisown, onOwn, onWishlist, onAddCustom, 
             {t('wardrobe.asType')}
             <select value={template} onChange={(e) => setTemplate(e.target.value)}>
               {items.filter((i) => !i.custom).map((i) => (
-                <option key={i.id} value={i.id}>{i.emoji} {catLabel(i.category)} · {itemName(i)}</option>
+                <option key={i.id} value={i.id}>{catLabel(i.category)} · {itemName(i)}</option>
               ))}
             </select>
           </label>

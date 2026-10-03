@@ -71,7 +71,7 @@ export function useAppState() {
     setWishlist: (id: string, wishlist: boolean) => updateItem(id, { wishlist }),
     addCustom: (name: string, templateId: string) => {
       const tpl = state.items.find((i) => i.id === templateId) ?? BASE_WARDROBE[0]
-      const item: Item = { ...tpl, id: `custom-${Date.now()}`, name, owned: true, wishlist: false, custom: true }
+      const item: Item = { ...tpl, icon: tpl.icon ?? tpl.id, id: `custom-${Date.now()}`, name, owned: true, wishlist: false, custom: true }
       setState((s) => ({ ...s, items: [...s.items, item] }))
     },
     removeCustom: (id: string) => setState((s) => ({ ...s, items: s.items.filter((i) => i.id !== id) })),

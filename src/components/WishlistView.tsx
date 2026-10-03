@@ -1,5 +1,7 @@
+import { Check, ShoppingBagOpen } from '@phosphor-icons/react'
 import { useI18n, type Key } from '../i18n'
 import type { Item } from '../types'
+import { ItemIcon } from './icons'
 
 interface Props {
   items: Item[]
@@ -13,7 +15,7 @@ export function WishlistView({ items, onBought, onRemove }: Props) {
   if (!list.length) {
     return (
       <div className="empty-state">
-        <div className="empty-emoji" aria-hidden>🛍️</div>
+        <div className="empty-icon" aria-hidden><ShoppingBagOpen size={56} weight="duotone" /></div>
         <p className="muted">{t('wish.empty')}</p>
       </div>
     )
@@ -23,13 +25,13 @@ export function WishlistView({ items, onBought, onRemove }: Props) {
       <ul className="rows">
         {list.map((i) => (
           <li key={i.id}>
-            <span className="row-emoji" aria-hidden>{i.emoji}</span>
+            <span className={`row-icon cat-${i.category}`} aria-hidden><ItemIcon item={i} size={24} /></span>
             <div className="row-main">
               <div>{itemName(i)}</div>
               <div className="muted small">{t(`cat.${i.category}` as Key)}</div>
             </div>
             <span className="row">
-              <button className="primary" onClick={() => onBought(i.id)}>✓ {t('wish.bought')}</button>
+              <button className="primary" onClick={() => onBought(i.id)}><Check weight="bold" /> {t('wish.bought')}</button>
               <button className="link" onClick={() => onRemove(i.id)}>{t('wish.remove')}</button>
             </span>
           </li>

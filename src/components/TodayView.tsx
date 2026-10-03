@@ -1,8 +1,10 @@
+import { ArrowsClockwise, Drop, Lightbulb, ShoppingBag, SunDim, Umbrella, Wind, WarningCircle, Check } from '@phosphor-icons/react'
 import { useEffect, useMemo, useState } from 'react'
 import { flag, useI18n, type Key } from '../i18n'
-import { RAIN_PROB, recommend, type Condition } from '../lib/recommend'
+import { RAIN_PROB, recommend } from '../lib/recommend'
 import { getForecast, getLastYear, OUT_END, OUT_START, WeatherError } from '../lib/weather'
-import type { DayWeather, HourWeather, Item, LastYearWeather, Place } from '../types'
+import type { DayWeather, Item, LastYearWeather, Place } from '../types'
+import { HourIcon, ItemIcon, SceneIcon } from './icons'
 import { WeatherScene, type Scene } from './WeatherScene'
 
 interface Props {
@@ -11,10 +13,6 @@ interface Props {
   onChangePlace: () => void
   onWishlist: (id: string) => void
 }
-
-const COND_ICON: Record<Condition, string> = { rain: '🌧️', hot: '🥵', cold: '🥶', sunny: '☀️', cloudy: '⛅' }
-
-const hourIcon = (h: HourWeather) => (h.precipProb >= RAIN_PROB ? '🌧️' : h.cloud >= 70 ? '☁️' : h.cloud >= 30 ? '⛅' : h.hour >= 19 ? '🌙' : '☀️')
 
 export function TodayView({ place, items, onChangePlace, onWishlist }: Props) {
   const i18n = useI18n()
@@ -64,7 +62,7 @@ export function TodayView({ place, items, onChangePlace, onWishlist }: Props) {
         {place.cc && !place.current && <span className="hero-country"> · {country(place.cc)}</span>}
       </button>
       <button className="hero-change" onClick={onChangePlace}>
-        🔄 {t('city.change')}
+        <ArrowsClockwise size={14} weight="bold" /> {t('city.change')}
       </button>
     </div>
   )
@@ -73,7 +71,7 @@ export function TodayView({ place, items, onChangePlace, onWishlist }: Props) {
     return (
       <section className="hero hero--cloudy">
         {placeButton}
-        <p className="hero-msg">😵 {t('wx.error', { status: current.error })}</p>
+        <p className="hero-msg"><WarningCircle size={20} weight="bold" /> {t('wx.error', { status: current.error })}</p>
       </section>
     )
   }
@@ -117,7 +115,7 @@ export function TodayView({ place, items, onChangePlace, onWishlist }: Props) {
         </div>
 
         <div className="hero-main">
-          <span className="hero-icon" aria-hidden>{COND_ICON[s.condition]}</span>
+          <span className="hero-icon" aria-hidden><SceneIcon scene={scene} night={night} size={60} /></span>
           <span className="hero-temp">{temp(s.tempMax, false)}</span>
           <div className="hero-side">
             <div className="hero-cond">{t(`cond.${s.condition}` as Key)} · {i18n.date(day.date)}</div>
@@ -127,16 +125,16 @@ export function TodayView({ place, items, onChangePlace, onWishlist }: Props) {
         </div>
 
         <div className="hero-sub">
-          <span>{s.rainFrom != null ? `☔ ${t('wx.rainFrom', { h: { hour: s.rainFrom } })}` : `🌂 ${t('wx.dry')}`}</span>
-          <span>💨 {t('wx.wind', { w: { wind: s.maxWind } })}</span>
-          <span>🔆 {t('wx.uv', { u: s.maxUv })}</span>
+          <span>{s.rainFrom != null ? <><Umbrella weight="fill" /> {t('wx.rainFrom', { h: { hour: s.rainFrom } })}</> : <><Drop weight="fill" /> {t('wx.dry')}</>}</span>
+          <span><Wind weight="bold" /> {t('wx.wind', { w: { wind: s.maxWind } })}</span>
+          <span><SunDim weight="fill" /> {t('wx.uv', { u: s.maxUv })}</span>
         </div>
 
         <div className="hourly" role="list">
           {day.hours.map((h) => (
             <div key={h.hour} className="hour" role="listitem" title={`${hour(h.hour)} · ${temp(h.feels)} · ${h.precipProb}%`}>
               <span className="hour-t">{temp(h.feels, false)}</span>
-              <span className="hour-i" aria-hidden>{hourIcon(h)}</span>
+              <span className="hour-i" aria-hidden><HourIcon h={h} /></span>
               <span className="hour-bar">
                 <span style={{ height: `${Math.max(h.precipProb, 4)}%` }} className={h.precipProb >= RAIN_PROB ? 'wet' : ''} />
               </span>
@@ -153,7 +151,7 @@ export function TodayView({ place, items, onChangePlace, onWishlist }: Props) {
           {rec.picks.map((p) => (
             <article key={p.category} className={`tile ${p.item ? '' : 'empty'}`}>
               <div className="tile-top">
-                <span className={`tile-emoji ${p.item?.dark ? 'emoji-dark' : ''}`} aria-hidden>{p.item?.emoji ?? '❔'}</span>
+                <span className={`tile-icon cat-${p.category} ${p.item?.dark ? 'is-dark' : ''}`} aria-hidden>{p.item ? <ItemIcon item={p.item} /> : '?'}</span>
                 <span className="tile-cat">{t(`cat.${p.category}` as Key)}</span>
               </div>
               <div className="tile-name">{p.item ? itemName(p.item) : t('outfit.nothing')}</div>
@@ -168,7 +166,7 @@ export function TodayView({ place, items, onChangePlace, onWishlist }: Props) {
             <span className="bring-label">{t('outfit.bring')}</span>
             {rec.accessories.map((p) => (
               <span key={p.item!.id} className="chip static" title={msg(p.reason)}>
-                {p.item!.emoji} {itemName(p.item!)}
+                <ItemIcon item={p.item!} size={18} /> {itemName(p.item!)}
               </span>
             ))}
           </div>
@@ -177,7 +175,7 @@ export function TodayView({ place, items, onChangePlace, onWishlist }: Props) {
 
       {rec.tips.length > 0 && (
         <section className="card tips">
-          <h2>💡 {t('tips.title')}</h2>
+          <h2><Lightbulb weight="duotone" /> {t('tips.title')}</h2>
           <ul>
             {rec.tips.map((m) => <li key={m.key}>{msg(m)}</li>)}
           </ul>
@@ -186,17 +184,17 @@ export function TodayView({ place, items, onChangePlace, onWishlist }: Props) {
 
       {rec.shopping.length > 0 && (
         <section className="card">
-          <h2>🛍️ {t('shop.title')}</h2>
+          <h2><ShoppingBag weight="duotone" /> {t('shop.title')}</h2>
           <ul className="rows">
             {rec.shopping.map(({ item, why }) => (
               <li key={item.id}>
-                <span className="row-emoji" aria-hidden>{item.emoji}</span>
+                <span className={`row-icon cat-${item.category}`} aria-hidden><ItemIcon item={item} size={24} /></span>
                 <div className="row-main">
                   <div>{itemName(item)}</div>
                   <div className="muted small">{msg(why)}</div>
                 </div>
                 {item.wishlist ? (
-                  <span className="muted small">✓ {t('shop.inList')}</span>
+                  <span className="muted small"><Check weight="bold" /> {t('shop.inList')}</span>
                 ) : (
                   <button className="ghost" onClick={() => onWishlist(item.id)}>+ {t('shop.add')}</button>
                 )}

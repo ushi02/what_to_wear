@@ -1,3 +1,4 @@
+import { MapPin } from '@phosphor-icons/react'
 import { useState } from 'react'
 import { CITIES } from '../data/cities'
 import { flag, useI18n, type Key } from '../i18n'
@@ -69,7 +70,7 @@ export function CityPicker({ onPick, onCancel }: { onPick: (p: Place) => void; o
       )}
 
       <div className="picker-actions">
-        <button className="ghost" onClick={locate}>📍 {t('city.useLocation')}</button>
+        <button className="ghost" onClick={locate}><MapPin weight="fill" /> {t('city.useLocation')}</button>
         {onCancel && <button className="link" onClick={onCancel}>{t('city.cancel')}</button>}
       </div>
     </section>
