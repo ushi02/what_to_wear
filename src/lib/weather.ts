@@ -80,16 +80,23 @@ interface ForecastResponse {
   }
 }
 
-/** 返回今天和明天两天（按当地时区），每天只保留出门时段的逐小时数据 */
-export async function getForecast(place: Place): Promise<DayWeather[]> {
-  const cacheKey = `fc2:${key(place)}:${new Date().toDateString()}`
-  const cached = cacheGet<DayWeather[]>(cacheKey, HOUR)
+export interface Forecast {
+  /** 今天和明天（按当地时区） */
+  days: DayWeather[]
+  /** 昨天，用来比冷暖 */
+  yesterday?: DayWeather
+}
+
+/** 每天只保留出门时段的逐小时数据 */
+export async function getForecast(place: Place): Promise<Forecast> {
+  const cacheKey = `fc3:${key(place)}:${new Date().toDateString()}`
+  const cached = cacheGet<Forecast>(cacheKey, HOUR)
   if (cached) return cached
 
   const url =
     `https://api.open-meteo.com/v1/forecast?latitude=${place.lat}&longitude=${place.lon}` +
     '&hourly=temperature_2m,apparent_temperature,precipitation_probability,precipitation,wind_speed_10m,uv_index,cloud_cover' +
-    '&timezone=auto&forecast_days=2'
+    '&timezone=auto&forecast_days=2&past_days=1'
   const { hourly: h } = await getJson<ForecastResponse>(url)
 
   const days = new Map<string, DayWeather>()
@@ -109,7 +116,8 @@ export async function getForecast(place: Place): Promise<DayWeather[]> {
       cloud: h.cloud_cover[i] ?? 0,
     })
   })
-  const result = [...days.values()]
+  const [yesterday, ...rest] = [...days.values()]
+  const result: Forecast = { days: rest, yesterday }
   cacheSet(cacheKey, result)
   return result
 }

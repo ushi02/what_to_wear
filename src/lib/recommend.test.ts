@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { freshWardrobe } from '../data/baseWardrobe'
 import type { DayWeather, HourWeather, Item } from '../types'
-import { recommend } from './recommend'
+import { compare, recommend, summarize } from './recommend'
 
 /** 生成 7–22 点的天气；feels 从 min 线性升到 max 再降回去 */
 function day(opts: { min: number; max: number; prob?: number; mm?: number; wind?: number; uv?: number }): DayWeather {
@@ -100,6 +100,26 @@ describe('recommend', () => {
 
   it('和去年同期对比', () => {
     const rec = recommend(day({ min: 10, max: 16 }), freshWardrobe(), { avgTemp: 20, rainyDays: 8, days: 15 })
-    expect(rec.tips.map((t) => t.key)).toEqual(expect.arrayContaining(['tip.colder', 'tip.rainyLastYear']))
+    expect(rec.tips.map((t) => t.key)).toContain('tip.rainyLastYear')
+  })
+})
+
+describe('compare', () => {
+  const keys = (c: ReturnType<typeof compare>) => c.map((x) => x.msg.key)
+
+  it('和昨天、去年同期比冷暖', () => {
+    const s = summarize(day({ min: 10, max: 16 }))
+    const c = compare(s, day({ min: 16, max: 22 }), false, { avgTemp: 20, rainyDays: 0, days: 15 })
+    expect(keys(c)).toEqual(['cmp.colder.yesterday', 'cmp.colder.lastYear'])
+    expect(c.map((x) => x.trend)).toEqual(['down', 'down'])
+  })
+
+  it('差得不多就说差不多；看明天时和今天比', () => {
+    const s = summarize(day({ min: 10, max: 16 }))
+    expect(keys(compare(s, day({ min: 11, max: 16 }), true, { avgTemp: 14, rainyDays: 0, days: 15 }))).toEqual(['cmp.same.today', 'cmp.usual'])
+  })
+
+  it('没有数据就不比', () => {
+    expect(compare(summarize(day({ min: 10, max: 16 })))).toEqual([])
   })
 })

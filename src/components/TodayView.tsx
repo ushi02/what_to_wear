@@ -1,7 +1,7 @@
-import { ArrowsClockwise, Drop, Lightbulb, ShoppingBag, SunDim, Umbrella, Wind, WarningCircle, Check } from '@phosphor-icons/react'
+import { ArrowsClockwise, ArrowDown, ArrowUp, Equals, Drop, Lightbulb, ShoppingBag, SunDim, Umbrella, Wind, WarningCircle, Check } from '@phosphor-icons/react'
 import { useEffect, useMemo, useState } from 'react'
 import { flag, useI18n, type Key } from '../i18n'
-import { recommend } from '../lib/recommend'
+import { compare, recommend } from '../lib/recommend'
 import { getForecast, getLastYear, OUT_END, OUT_START, WeatherError } from '../lib/weather'
 import type { DayWeather, Item, LastYearWeather, Place } from '../types'
 import { HourlyChart } from './HourlyChart'
@@ -21,7 +21,7 @@ export function TodayView({ place, items, onChangePlace, onWishlist }: Props) {
 
   // 结果带上请求时的 key，换城市/换天后旧结果自动失效，不用在 effect 里手动清空
   const placeKey = `${place.lat},${place.lon}`
-  const [fc, setFc] = useState<{ key: string; days?: DayWeather[]; error?: string }>()
+  const [fc, setFc] = useState<{ key: string; days?: DayWeather[]; yesterday?: DayWeather; error?: string }>()
   const [ly, setLy] = useState<{ key: string; value: LastYearWeather }>()
   // 晚上 8 点以后默认看明天
   const [dayIndex, setDayIndex] = useState(new Date().getHours() >= 20 ? 1 : 0)
@@ -29,7 +29,7 @@ export function TodayView({ place, items, onChangePlace, onWishlist }: Props) {
   useEffect(() => {
     let cancelled = false
     getForecast(place)
-      .then((days) => !cancelled && setFc({ key: placeKey, days }))
+      .then((f) => !cancelled && setFc({ key: placeKey, ...f }))
       .catch((e: unknown) => !cancelled && setFc({ key: placeKey, error: e instanceof WeatherError ? e.status : 'network' }))
     return () => {
       cancelled = true
@@ -97,6 +97,8 @@ export function TodayView({ place, items, onChangePlace, onWishlist }: Props) {
   // 下雨但很冷就画雪；只有看今天、且天已经黑了才用夜景
   const scene: Scene = s.condition === 'rain' && s.tempMax <= 2 ? 'snow' : s.condition
   const nowHour = new Date().getHours()
+  const dayPos = days.indexOf(day)
+  const comparisons = compare(s, dayPos === 0 ? current?.yesterday : days[dayPos - 1], dayPos > 0, lastYear)
   const night = dayIndex === 0 && (nowHour >= 18 || nowHour < 6)
 
   return (
@@ -123,6 +125,17 @@ export function TodayView({ place, items, onChangePlace, onWishlist }: Props) {
             <div>{t('wx.feels', { min: { temp: s.feelsMin }, max: { temp: s.feelsMax } })}</div>
           </div>
         </div>
+
+        {comparisons.length > 0 && (
+          <div className="hero-compare">
+            {comparisons.map((c) => (
+              <span key={c.msg.key} className={`trend trend--${c.trend}`}>
+                {c.trend === 'up' ? <ArrowUp weight="bold" /> : c.trend === 'down' ? <ArrowDown weight="bold" /> : <Equals weight="bold" />}
+                {msg(c.msg)}
+              </span>
+            ))}
+          </div>
+        )}
 
         <div className="hero-sub">
           <span>{s.rainFrom != null ? <><Umbrella weight="fill" /> {t('wx.rainFrom', { h: { hour: s.rainFrom } })}</> : <><Drop weight="fill" /> {t('wx.dry')}</>}</span>

@@ -6,6 +6,10 @@ export const RAIN_MM = 0.5
 export const WINDY_KMH = 30
 export const HIGH_UV = 6
 export const BIG_SWING = 10
+/** 和前一天差这么多才算“变冷/变暖” */
+export const DAY_DIFF = 2
+/** 和去年同期差这么多才值得提 */
+export const YEAR_DIFF = 3
 
 export interface Summary {
   feelsMin: number
@@ -201,13 +205,46 @@ export function recommend(day: DayWeather, items: Item[], lastYear?: LastYearWea
     tips.push(m('tip.swing', { d: { diff: s.feelsMax - s.feelsMin } }))
   }
   if (s.rainy && !needOuter) tips.push(m('tip.umbrellaEnough'))
+  // 比去年冷暖由 compare() 在天气卡片上展示，这里只留跟穿搭有关的提醒
   if (lastYear) {
-    const diff = (s.tempMin + s.tempMax) / 2 - lastYear.avgTemp
-    if (Math.abs(diff) >= 3) tips.push(m(diff > 0 ? 'tip.warmer' : 'tip.colder', { d: { diff: Math.abs(diff) } }))
     if (lastYear.days > 0 && lastYear.rainyDays / lastYear.days >= 0.4) {
       tips.push(m('tip.rainyLastYear', { n: lastYear.rainyDays }))
     }
   }
 
   return { summary: s, picks, accessories, tips, shopping }
+}
+
+export type Trend = 'up' | 'down' | 'flat'
+export interface Comparison {
+  trend: Trend
+  msg: Msg
+}
+
+const mean = (s: Summary) => (s.tempMin + s.tempMax) / 2
+
+/**
+ * 和前一天、和去年同期比冷暖，都按出门时段的 (最低+最高)/2 算。
+ * prevIsToday：看明天时，“前一天”就是今天。
+ */
+export function compare(s: Summary, prev?: DayWeather, prevIsToday = false, lastYear?: LastYearWeather): Comparison[] {
+  const out: Comparison[] = []
+  if (prev?.hours.length) {
+    const d = mean(s) - mean(summarize(prev))
+    const ref = prevIsToday ? 'today' : 'yesterday'
+    out.push(
+      Math.abs(d) < DAY_DIFF
+        ? { trend: 'flat', msg: { key: `cmp.same.${ref}` as Key } }
+        : { trend: d > 0 ? 'up' : 'down', msg: { key: `cmp.${d > 0 ? 'warmer' : 'colder'}.${ref}` as Key, params: { d: { diff: Math.abs(d) } } } },
+    )
+  }
+  if (lastYear) {
+    const d = mean(s) - lastYear.avgTemp
+    out.push(
+      Math.abs(d) < YEAR_DIFF
+        ? { trend: 'flat', msg: { key: 'cmp.usual' } }
+        : { trend: d > 0 ? 'up' : 'down', msg: { key: d > 0 ? 'cmp.warmer.lastYear' : 'cmp.colder.lastYear', params: { d: { diff: Math.abs(d) } } } },
+    )
+  }
+  return out
 }

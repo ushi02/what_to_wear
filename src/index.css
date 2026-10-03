@@ -220,6 +220,12 @@ input, select {
 .hero-temp { font-size: 5rem; font-weight: 250; line-height: 0.9; letter-spacing: -0.05em; }
 .hero-side { font-size: 0.9rem; opacity: 0.92; line-height: 1.45; }
 .hero-cond { font-weight: 600; font-size: var(--fs-lg); opacity: 1; margin-bottom: 2px; }
+.hero-compare { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 2px; }
+.trend { display: inline-flex; align-items: center; gap: 5px; font-size: var(--fs-sm); font-weight: 600; padding: 4px 10px 4px 8px; border-radius: 999px; background: rgb(255 255 255 / 0.18); backdrop-filter: blur(8px); }
+.trend svg { padding: 2px; border-radius: 50%; box-sizing: content-box; }
+.trend--up svg { background: rgb(255 170 90 / 0.9); }
+.trend--down svg { background: rgb(110 180 255 / 0.9); }
+.trend--flat svg { background: rgb(255 255 255 / 0.3); }
 .hero-sub { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 0.88rem; opacity: 0.95; margin: 8px 2px 12px; }
 
 .hourly { margin: 4px 0 0; padding-top: 10px; border-top: 1px solid rgb(255 255 255 / 0.2); }
