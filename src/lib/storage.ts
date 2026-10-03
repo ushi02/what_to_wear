@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { BASE_WARDROBE, freshWardrobe } from '../data/baseWardrobe'
-import { detectLang, detectUnit, type Lang, type Unit } from '../i18n'
+import { detectUnit, type Lang, type Unit } from '../i18n'
 import type { Item, Place } from '../types'
 
 const STATE_KEY = 'wtw:v1:state'
@@ -30,7 +30,7 @@ function write(key: string, value: string) {
   }
 }
 
-const defaults = (): AppState => ({ items: freshWardrobe(), lang: detectLang(), unit: detectUnit() })
+const defaults = (): AppState => ({ items: freshWardrobe(), lang: 'en', unit: detectUnit() })
 
 export function loadState(): AppState {
   const raw = read(STATE_KEY)
@@ -44,7 +44,9 @@ export function loadState(): AppState {
       return mine ? { ...b, owned: mine.owned, wishlist: mine.wishlist } : b
     })
     const custom = savedItems.filter((i) => i.custom).map((i) => ({ ...i, emoji: i.emoji ?? '👕' }))
-    return { ...defaults(), ...saved, items: [...base, ...custom] }
+    // 日文已下线，之前存了 ja 的回落到英文
+    const lang = saved.lang === 'zh' || saved.lang === 'en' ? saved.lang : 'en'
+    return { ...defaults(), ...saved, lang, items: [...base, ...custom] }
   } catch {
     return defaults()
   }

@@ -3,6 +3,7 @@ export interface City {
   id: string
   en: string
   zh: string
+  /** 日文名，界面不再显示日文，只用于搜索 */
   ja: string
   /** 其他常见写法，只用于搜索 */
   alt?: string[]

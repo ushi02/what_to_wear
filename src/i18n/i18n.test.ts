@@ -7,10 +7,9 @@ import { MESSAGES, type Key } from './messages'
 const placeholders = (s: string) => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort()
 
 describe('messages', () => {
-  it('三种语言的占位符一致', () => {
+  it('中英文的占位符一致', () => {
     for (const key of Object.keys(MESSAGES.en) as Key[]) {
       expect(placeholders(MESSAGES.zh[key]), `zh ${key}`).toEqual(placeholders(MESSAGES.en[key]))
-      expect(placeholders(MESSAGES.ja[key]), `ja ${key}`).toEqual(placeholders(MESSAGES.en[key]))
     }
   })
 
