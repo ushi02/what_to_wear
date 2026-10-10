@@ -1,16 +1,23 @@
 :root {
-  --bg: #f2f3f7;
-  --surface: #ffffff;
-  --surface-2: #f6f7fa;
-  --text: #16181d;
-  --muted: #6b7080;
-  --line: #e6e8ee;
-  --accent: #2f6fed;
-  --accent-soft: #e8efff;
+  --bg: #f5f2ed;
+  /* 卡片是半透明磨砂玻璃，背后的彩色光斑会透出来 */
+  --surface: rgb(255 255 255 / 0.62);
+  --surface-2: rgb(255 255 255 / 0.55);
+  --glass-edge: rgb(255 255 255 / 0.75);
+  --text: #19171f;
+  --muted: #6f6a78;
+  --line: rgb(25 20 40 / 0.09);
+  --accent: #5b55d6;
+  --accent-soft: rgb(91 85 214 / 0.12);
   --warn: #b35c00;
   --warn-soft: #fff0dc;
   --danger: #d03b2f;
-  --shadow: 0 1px 2px rgb(16 24 40 / 0.04), 0 4px 16px rgb(16 24 40 / 0.06);
+  --shadow: 0 1px 2px rgb(40 30 60 / 0.04), 0 8px 24px -6px rgb(40 30 60 / 0.10);
+  /* 背景光斑：蜜桃 / 薰衣草 / 薄荷 */
+  --blob-1: rgb(255 168 135 / 0.75);
+  --blob-2: rgb(168 156 255 / 0.7);
+  --blob-3: rgb(120 215 190 / 0.6);
+  --grain: 0.5;
   --radius: 20px;
   /* 每个衣物类别一种颜色：图标色 / 底色 */
   --c-top: #2f6fed; --c-top-bg: #e8efff;
@@ -32,39 +39,60 @@
   -webkit-font-smoothing: antialiased;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0e0f13;
-    --surface: #181a20;
-    --surface-2: #1f2229;
-    --text: #eceef3;
-    --muted: #979cab;
-    --line: #2a2d36;
-    --accent: #7aa2ff;
-    --accent-soft: #1f2a44;
-    --warn: #ffb266;
-    --warn-soft: #3a2a17;
-    --danger: #ff7a6e;
-    --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 6px 20px rgb(0 0 0 / 0.25);
-    --c-top: #86aaff; --c-top-bg: #1d2a47;
-    --c-mid: #b49bff; --c-mid-bg: #2a2147;
-    --c-outer: #5fd4c4; --c-outer-bg: #15332f;
-    --c-bottom: #9aa7f5; --c-bottom-bg: #222845;
-    --c-shoes: #ffad66; --c-shoes-bg: #3a2816;
-    --c-accessory: #ff8cc0; --c-accessory-bg: #3d1a2b;
-    color-scheme: dark;
-  }
+/* data-theme 由 index.html 和 App 根据用户选择（或系统设置）写在 <html> 上 */
+:root[data-theme='dark'] {
+  --bg: #0b0b11;
+  --surface: rgb(32 31 44 / 0.55);
+  --surface-2: rgb(255 255 255 / 0.05);
+  --glass-edge: rgb(255 255 255 / 0.07);
+  --text: #eeedf4;
+  --muted: #9c98aa;
+  --line: rgb(255 255 255 / 0.08);
+  --accent: #a9a5ff;
+  --accent-soft: rgb(169 165 255 / 0.14);
+  --warn: #ffb266;
+  --warn-soft: #3a2a17;
+  --danger: #ff7a6e;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 10px 30px -8px rgb(0 0 0 / 0.5);
+  --blob-1: rgb(98 76 235 / 0.5);
+  --blob-2: rgb(210 60 155 / 0.32);
+  --blob-3: rgb(20 160 160 / 0.32);
+  --grain: 0.35;
+  --c-top: #86aaff; --c-top-bg: #1d2a47;
+  --c-mid: #b49bff; --c-mid-bg: #2a2147;
+  --c-outer: #5fd4c4; --c-outer-bg: #15332f;
+  --c-bottom: #9aa7f5; --c-bottom-bg: #222845;
+  --c-shoes: #ffad66; --c-shoes-bg: #3a2816;
+  --c-accessory: #ff8cc0; --c-accessory-bg: #3d1a2b;
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
 svg { flex-shrink: 0; }
 button svg, h2 svg, .hero-sub svg, .hero-msg svg, .chip svg, .muted svg { vertical-align: -0.15em; }
-body { margin: 0; background: var(--bg); }
+/* 背景色只放在 :root 上；body 自己不能有背景，否则会盖住下面 z-index -1 的光斑层 */
+body { margin: 0; min-height: 100vh; }
+/* 背景：几团模糊的彩色光斑 + 一层细颗粒，固定不随页面滚动 */
+body::before, body::after { content: ''; position: fixed; z-index: -1; pointer-events: none; }
+body::before {
+  inset: -10vmax;
+  background:
+    radial-gradient(36vmax 36vmax at 18% 14%, var(--blob-1), transparent 70%),
+    radial-gradient(34vmax 34vmax at 88% 30%, var(--blob-2), transparent 70%),
+    radial-gradient(40vmax 40vmax at 45% 92%, var(--blob-3), transparent 70%);
+  filter: blur(24px);
+  animation: breathe 24s ease-in-out infinite alternate;
+}
+body::after {
+  inset: 0; opacity: var(--grain); mix-blend-mode: soft-light;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+@keyframes breathe { to { transform: translate(-2vmax, 1.5vmax) scale(1.05); } }
 h1, h2, p { margin: 0; }
 h1, h2, .hero-temp, .hero-cond, .tile-name, .tile-cat, .tabs button, .seg button, .hero-place { font-family: var(--font-display); }
 .hero-temp, .hero-side { font-variant-numeric: tabular-nums; }
 
-.app { max-width: 600px; margin: 0 auto; padding: 12px 16px 64px; }
+.app { max-width: 940px; margin: 0 auto; padding: 12px 16px 64px; }
 
 /* ---------- controls ---------- */
 button {
@@ -84,11 +112,12 @@ input, select {
   border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; width: 100%;
 }
 
-.seg { display: inline-flex; background: var(--surface); border-radius: 12px; padding: 3px; box-shadow: var(--shadow); }
+.seg { display: inline-flex; background: var(--surface); border-radius: 12px; padding: 3px; box-shadow: var(--shadow); border: 1px solid var(--glass-edge); backdrop-filter: blur(16px) saturate(1.4); }
 .seg button { padding: 5px 12px; border-radius: 9px; color: var(--muted); font-weight: 500; }
 .seg button.on { background: var(--text); color: var(--bg); }
 .seg.small button { padding: 3px 9px; font-size: 0.82rem; }
-.seg.glass { background: rgb(255 255 255 / 0.18); box-shadow: none; backdrop-filter: blur(8px); }
+.seg.icons button { display: inline-flex; align-items: center; padding: 4px 7px; }
+.seg.glass { background: rgb(255 255 255 / 0.18); box-shadow: none; border-color: transparent; backdrop-filter: blur(8px); }
 .seg.glass button { color: rgb(255 255 255 / 0.85); }
 .seg.glass button.on { background: #fff; color: #1b2433; }
 
@@ -112,9 +141,10 @@ input, select {
 
 .tabs { display: flex; gap: 6px; margin-bottom: 14px; overflow-x: auto; }
 .tabs button { white-space: nowrap; color: var(--muted); font-weight: 550; font-size: var(--fs-md); padding: 8px 14px; border-radius: 999px; }
-.tabs button.on { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
+.tabs button.on { background: var(--surface); color: var(--text); box-shadow: var(--shadow); backdrop-filter: blur(16px) saturate(1.4); }
 
 /* ---------- cards ---------- */
+.card, .tile, .closet-item { border: 1px solid var(--glass-edge); backdrop-filter: blur(18px) saturate(1.4); -webkit-backdrop-filter: blur(18px) saturate(1.4); }
 .card { background: var(--surface); border-radius: var(--radius); padding: 16px 18px; margin: 14px 0; box-shadow: var(--shadow); }
 .card h2, .section h2 { font-size: var(--fs-lg); font-weight: 650; letter-spacing: -0.01em; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
 .section { margin: 22px 0 8px; }
@@ -149,6 +179,17 @@ input, select {
 .hero--snow { --g1: #c3d1e4; --g2: #8b9dba; --g3: #5c6e8c; }
 .hero--cloudy { --g1: #9aabbf; --g2: #6a7a92; --g3: #4d5b72; }
 .hero--cold { --g1: #a9d1ff; --g2: #6a94d4; --g3: #3f63a8; }
+/* 深色模式：同样的天气配色，压暗降饱和，免得在黑底上刺眼。
+   :where 让优先级和上面一样，下面的 .hero--night 仍然能覆盖 */
+:where(:root[data-theme='dark']) :is(.hero, .peek) { --g1: #3c4656; --g2: #283040; --g3: #181d28; }
+:where(:root[data-theme='dark']) .hero--sunny { --g1: #2f5594; --g2: #1d3768; --g3: #10214a; }
+:where(:root[data-theme='dark']) .hero--hot { --g1: #9a5530; --g2: #763043; --g3: #431a34; }
+:where(:root[data-theme='dark']) .hero--rain { --g1: #2e3a52; --g2: #1d2638; --g3: #10151f; }
+:where(:root[data-theme='dark']) .hero--snow { --g1: #4a576e; --g2: #2d374a; --g3: #1a2130; }
+:where(:root[data-theme='dark']) .hero--cloudy { --g1: #3c4656; --g2: #283040; --g3: #181d28; }
+:where(:root[data-theme='dark']) .hero--cold { --g1: #2f4d7c; --g2: #1d335a; --g3: #111f3c; }
+:where(:root[data-theme='dark']) :is(.hero, .peek) { box-shadow: 0 14px 34px -16px rgb(0 0 0 / 0.7); outline: 1px solid rgb(255 255 255 / 0.06); outline-offset: -1px; }
+:where(:root[data-theme='dark']) .sun { opacity: 0.5; }
 .hero--night { --g1: #29336b; --g2: #141b42; --g3: #080b20; }
 .hero--night.hero--rain, .hero--night.hero--snow { --g1: #3a4560; --g2: #1d2436; --g3: #0d111c; }
 
@@ -203,7 +244,7 @@ input, select {
 @keyframes snow { 0% { transform: translate(0, 0); } 50% { transform: translate(14px, 260px); } 100% { transform: translate(-6px, 520px); } }
 
 @media (prefers-reduced-motion: reduce) {
-  .scene * { animation: none !important; }
+  .scene *, body::before { animation: none !important; }
   .drop, .flake { display: none; }
 }
 
@@ -253,6 +294,50 @@ input, select {
 .key-rain { width: 10px; height: 10px; border-radius: 3px; background: #cfe6ff; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
+/* ---------- day peek（另一天的小预览） ---------- */
+/* 宽屏：右边挂一个吸顶小窗；窄屏：放到天气卡片下面 */
+.today { display: flex; flex-direction: column; }
+.today-main { display: contents; }
+.today-main > * { order: 2; }
+.today-main > .hero { order: 0; }
+.today-peek { order: 1; margin-top: 14px; }
+@media (min-width: 900px) {
+  .today { display: grid; grid-template-columns: minmax(0, 1fr) 270px; gap: 22px; align-items: start; }
+  .today-main { display: block; }
+  .today-peek { margin-top: 0; position: sticky; top: 16px; }
+}
+
+/* :where 让默认色的优先级为 0，.hero--sunny 等天气类才能覆盖 */
+:where(.peek) { --g1: #9aabbf; --g2: #6a7a92; --g3: #4d5b72; }
+.peek {
+  width: 100%; display: flex; flex-direction: column; gap: 8px; text-align: left;
+  color: #fff; border-radius: 24px; padding: 16px;
+  background: linear-gradient(165deg, var(--g1), var(--g2) 60%, var(--g3));
+  box-shadow: 0 16px 32px -18px var(--g3);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.peek:hover { transform: translateY(-2px); box-shadow: 0 20px 36px -16px var(--g3); }
+.peek:active { transform: scale(0.99); }
+.peek-head { display: flex; justify-content: space-between; align-items: baseline; }
+.peek-label { font-family: var(--font-display); font-weight: 650; font-size: var(--fs-xs); letter-spacing: 0.08em; text-transform: uppercase; }
+.peek-date { font-size: var(--fs-xs); opacity: 0.8; }
+.peek-main { display: flex; align-items: center; gap: 8px; filter: drop-shadow(0 4px 10px rgb(0 0 0 / 0.12)); }
+.peek-temp { font-family: var(--font-display); font-size: 2.6rem; font-weight: 300; line-height: 1; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+.peek-low { font-family: var(--font-display); font-size: 1.1rem; opacity: 0.7; align-self: flex-end; padding-bottom: 4px; }
+.peek-cond { font-size: var(--fs-sm); font-weight: 500; opacity: 0.95; }
+.peek-cond svg { vertical-align: -0.15em; }
+.peek .trend { align-self: flex-start; }
+.peek-wear { background: rgb(255 255 255 / 0.16); backdrop-filter: blur(10px); border-radius: 16px; padding: 10px 12px; margin-top: 4px; }
+.peek-wear-title { font-size: var(--fs-xs); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.8; margin-bottom: 4px; }
+.peek-wear ul { list-style: none; margin: 0; padding: 0; }
+.peek-wear li { display: flex; align-items: center; gap: 8px; font-size: var(--fs-sm); padding: 3px 0; }
+.peek-icon { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 8px; color: var(--c); background: var(--c-bg); }
+.peek-open { align-self: flex-end; display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-sm); font-weight: 600; opacity: 0.9; }
+@media (max-width: 899px) {
+  /* 窄屏时穿搭横着排，卡片别太高 */
+  .peek-wear ul { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+}
+
 /* ---------- outfit ---------- */
 .outfit { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
 .tile { background: var(--surface); border-radius: 18px; padding: 14px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 4px; }
@@ -266,8 +351,6 @@ input, select {
 .cat-bottom { --c: var(--c-bottom); --c-bg: var(--c-bottom-bg); }
 .cat-shoes { --c: var(--c-shoes); --c-bg: var(--c-shoes-bg); }
 .cat-accessory { --c: var(--c-accessory); --c-bg: var(--c-accessory-bg); }
-/* 黑色款：不管亮暗模式都画成深色 */
-.is-dark { --c: #1d2027; --c-bg: #dcdee5; }
 .tile-cat { font-size: var(--fs-xs); font-weight: 500; letter-spacing: 0.02em; color: var(--muted); background: var(--surface-2); border-radius: 999px; padding: 2px 8px; }
 .tile-name { font-weight: 600; font-size: var(--fs-md); margin-top: 8px; line-height: 1.3; }
 .tile .badge { align-self: flex-start; }
@@ -291,7 +374,7 @@ input, select {
 .intro { color: var(--muted); font-size: 0.92rem; margin: 2px 4px 0; }
 .closet { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
 .closet-item { background: var(--surface); border-radius: 16px; padding: 12px 10px 8px; box-shadow: var(--shadow); display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px; }
-.closet-item.off { background: transparent; box-shadow: none; border: 1.5px dashed var(--line); }
+.closet-item.off { background: transparent; box-shadow: none; border: 1.5px dashed var(--line); backdrop-filter: none; }
 .closet-item.off .closet-icon { --c: var(--muted); --c-bg: transparent; opacity: 0.7; }
 .closet-item.off .closet-name { color: var(--muted); }
 .closet-icon { width: 50px; height: 50px; margin-bottom: 4px; }

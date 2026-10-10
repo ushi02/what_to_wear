@@ -42,26 +42,26 @@ describe('recommend', () => {
 
   it('雨天只有匡威时穿匡威，并建议买双防水鞋', () => {
     const rec = recommend(day({ min: 15, max: 20, prob: 80 }), without('boots', 'leather'))
-    expect(['canvas', 'sneaker-white']).toContain(pickOf(rec, 'shoes')?.item?.id)
+    expect(['canvas', 'sneaker']).toContain(pickOf(rec, 'shoes')?.item?.id)
     expect(rec.shopping.map((s) => s.item.id)).toContain('boots')
   })
 
   it('雨天只有网面鞋时凑合穿，给出换袜子提示和购买建议', () => {
-    const rec = recommend(day({ min: 15, max: 20, prob: 80 }), without('boots', 'leather', 'canvas', 'sneaker-white', 'sandals'))
+    const rec = recommend(day({ min: 15, max: 20, prob: 80 }), without('boots', 'leather', 'canvas', 'sneaker', 'sandals'))
     expect(pickOf(rec, 'shoes')?.item?.id).toBe('sneaker-mesh')
     expect(rec.tips.map((t) => t.key)).toContain('tip.socks')
     expect(rec.shopping.length).toBeGreaterThan(0)
   })
 
   it('不下雨时可以穿网面鞋', () => {
-    const items = without('canvas', 'sneaker-white', 'leather')
+    const items = without('canvas', 'sneaker', 'leather')
     const rec = recommend(day({ min: 14, max: 22 }), items)
     expect(pickOf(rec, 'shoes')?.item?.id).toBe('sneaker-mesh')
   })
 
   it('标记"我没有"的衣服不会被推荐', () => {
-    const rec = recommend(day({ min: 24, max: 32 }), without('tee-white'))
-    expect(pickOf(rec, 'top')?.item?.id).toBe('tee-black')
+    const rec = recommend(day({ min: 24, max: 32 }), without('tee'))
+    expect(pickOf(rec, 'top')?.item?.id).not.toBe('tee')
   })
 
   it('炎热天：短袖短裤，不穿外套', () => {
@@ -97,26 +97,21 @@ describe('recommend', () => {
     const rec = recommend(day({ min: 22, max: 28, prob: 70 }), without('umbrella'))
     expect(rec.shopping.map((s) => s.item.id)).toContain('umbrella')
   })
-
-  it('和去年同期对比', () => {
-    const rec = recommend(day({ min: 10, max: 16 }), freshWardrobe(), { avgTemp: 20, rainyDays: 8, days: 15 })
-    expect(rec.tips.map((t) => t.key)).toContain('tip.rainyLastYear')
-  })
 })
 
 describe('compare', () => {
   const keys = (c: ReturnType<typeof compare>) => c.map((x) => x.msg.key)
 
-  it('和昨天、去年同期比冷暖', () => {
+  it('和昨天比冷暖', () => {
     const s = summarize(day({ min: 10, max: 16 }))
-    const c = compare(s, day({ min: 16, max: 22 }), false, { avgTemp: 20, rainyDays: 0, days: 15 })
-    expect(keys(c)).toEqual(['cmp.colder.yesterday', 'cmp.colder.lastYear'])
-    expect(c.map((x) => x.trend)).toEqual(['down', 'down'])
+    const c = compare(s, day({ min: 16, max: 22 }))
+    expect(keys(c)).toEqual(['cmp.colder.yesterday'])
+    expect(c.map((x) => x.trend)).toEqual(['down'])
   })
 
   it('差得不多就说差不多；看明天时和今天比', () => {
     const s = summarize(day({ min: 10, max: 16 }))
-    expect(keys(compare(s, day({ min: 11, max: 16 }), true, { avgTemp: 14, rainyDays: 0, days: 15 }))).toEqual(['cmp.same.today', 'cmp.usual'])
+    expect(keys(compare(s, day({ min: 11, max: 16 }), true))).toEqual(['cmp.same.today'])
   })
 
   it('没有数据就不比', () => {

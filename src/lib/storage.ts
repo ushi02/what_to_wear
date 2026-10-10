@@ -6,11 +6,14 @@ import type { Item, Place } from '../types'
 const STATE_KEY = 'wtw:v1:state'
 const CACHE_PREFIX = 'wtw:cache:'
 
+export type Theme = 'auto' | 'light' | 'dark'
+
 export interface AppState {
   items: Item[]
   place?: Place
   lang: Lang
   unit: Unit
+  theme: Theme
 }
 
 // 隐私模式或禁用站点数据时 localStorage 会抛异常，统一吞掉，页面照常能用
@@ -30,14 +33,29 @@ function write(key: string, value: string) {
   }
 }
 
-const defaults = (): AppState => ({ items: freshWardrobe(), lang: 'en', unit: detectUnit() })
+/** 去掉颜色款之后合并的旧 id：任一旧款有就算有 */
+const RENAMED: Record<string, string> = { 'tee-white': 'tee', 'tee-black': 'tee', 'sneaker-white': 'sneaker' }
+
+function migrateIds(items: Item[]): Item[] {
+  const out: Item[] = []
+  for (const i of items) {
+    const id = RENAMED[i.id] ?? i.id
+    const icon = i.icon && RENAMED[i.icon] ? RENAMED[i.icon] : i.icon
+    const prev = out.find((x) => x.id === id)
+    if (prev) Object.assign(prev, { owned: prev.owned || i.owned, wishlist: (prev.wishlist || i.wishlist) && !(prev.owned || i.owned) })
+    else out.push({ ...i, id, icon })
+  }
+  return out
+}
+
+const defaults = (): AppState => ({ items: freshWardrobe(), lang: 'en', unit: detectUnit(), theme: 'auto' })
 
 export function loadState(): AppState {
   const raw = read(STATE_KEY)
   if (!raw) return defaults()
   try {
     const saved = JSON.parse(raw) as Partial<AppState>
-    const savedItems = saved.items ?? []
+    const savedItems = migrateIds(saved.items ?? [])
     // 基础衣橱的定义（温度区间、emoji 等）以代码为准，只保留用户的 owned / wishlist；新加的单品老用户也能看到
     const base = freshWardrobe().map((b) => {
       const mine = savedItems.find((i) => i.id === b.id)
@@ -64,14 +82,16 @@ export function useAppState() {
     setPlace: (place: Place) => setState((s) => ({ ...s, place })),
     setLang: (lang: Lang) => setState((s) => ({ ...s, lang })),
     setUnit: (unit: Unit) => setState((s) => ({ ...s, unit })),
+    setTheme: (theme: Theme) => setState((s) => ({ ...s, theme })),
     /** 我没有 → 不再推荐 */
     disown: (id: string) => updateItem(id, { owned: false }),
     /** 其实有 / 已买到 */
     own: (id: string) => updateItem(id, { owned: true, wishlist: false }),
     setWishlist: (id: string, wishlist: boolean) => updateItem(id, { wishlist }),
-    addCustom: (name: string, templateId: string) => {
+    /** wishlist: true 时是“想买”的东西，还没拥有 */
+    addCustom: (name: string, templateId: string, wishlist = false) => {
       const tpl = state.items.find((i) => i.id === templateId) ?? BASE_WARDROBE[0]
-      const item: Item = { ...tpl, icon: tpl.icon ?? tpl.id, id: `custom-${Date.now()}`, name, owned: true, wishlist: false, custom: true }
+      const item: Item = { ...tpl, icon: tpl.icon ?? tpl.id, id: `custom-${Date.now()}`, name, owned: !wishlist, wishlist, custom: true }
       setState((s) => ({ ...s, items: [...s.items, item] }))
     },
     removeCustom: (id: string) => setState((s) => ({ ...s, items: s.items.filter((i) => i.id !== id) })),

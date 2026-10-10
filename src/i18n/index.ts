@@ -59,7 +59,7 @@ export function makeI18n(lang: Lang, unit: Unit) {
     hourShort,
     itemName: (i: Item) => (i.custom ? i.name : t(`item.${i.id}` as Key)),
     placeName: (p: Place) => {
-      if (p.current) return t('city.current')
+      if (p.current && !p.name) return t('city.current')
       const city = p.cityId ? CITIES.find((c) => c.id === p.cityId) : undefined
       return city ? city[lang] : p.name
     },

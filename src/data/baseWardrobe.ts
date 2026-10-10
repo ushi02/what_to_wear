@@ -5,8 +5,7 @@ type BaseItem = Omit<Item, 'owned' | 'wishlist'>
 /** 懒人版 unisex 基础衣橱。新用户默认全部"已拥有"，没有的自己划掉。name 只是给开发看的，界面上走 i18n。 */
 export const BASE_WARDROBE: BaseItem[] = [
   // 上衣（贴身那层，按白天最高体感选）
-  { id: 'tee-white', name: '白色短袖 T 恤', emoji: '👕', category: 'top', range: [20, 45] },
-  { id: 'tee-black', name: '黑色短袖 T 恤', emoji: '👕', category: 'top', range: [20, 45], dark: true },
+  { id: 'tee', name: '短袖 T 恤', emoji: '👕', category: 'top', range: [20, 45] },
   { id: 'shirt', name: '衬衫', emoji: '👔', category: 'top', range: [15, 28] },
   { id: 'longsleeve', name: '长袖打底 T', emoji: '👚', category: 'top', range: [6, 24] },
   { id: 'thermal', name: '保暖内衣', emoji: '🌡️', category: 'top', range: [-30, 7] },
@@ -28,8 +27,8 @@ export const BASE_WARDROBE: BaseItem[] = [
   { id: 'fleece-pants', name: '加绒长裤', emoji: '👖', category: 'bottom', range: [-30, 6] },
 
   // 鞋
-  { id: 'canvas', name: '帆布鞋（匡威）', emoji: '👟', category: 'shoes', range: [6, 32], rain: 1 },
-  { id: 'sneaker-white', name: '白色板鞋', emoji: '👟', category: 'shoes', range: [4, 32], rain: 1 },
+  { id: 'canvas', name: '帆布鞋', emoji: '👟', category: 'shoes', range: [6, 32], rain: 1 },
+  { id: 'sneaker', name: '板鞋', emoji: '👟', category: 'shoes', range: [4, 32], rain: 1 },
   { id: 'sneaker-mesh', name: '网面运动鞋', emoji: '👟', category: 'shoes', range: [4, 35], rain: 0 },
   { id: 'leather', name: '皮鞋 / 乐福鞋', emoji: '👞', category: 'shoes', range: [-5, 30], rain: 2 },
   { id: 'boots', name: '防水短靴 / 雨靴', emoji: '🥾', category: 'shoes', range: [-30, 22], rain: 3 },

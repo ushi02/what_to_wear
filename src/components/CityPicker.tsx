@@ -2,7 +2,7 @@ import { MapPin } from '@phosphor-icons/react'
 import { useState } from 'react'
 import { CITIES } from '../data/cities'
 import { flag, useI18n, type Key } from '../i18n'
-import { searchCity } from '../lib/weather'
+import { reverseGeocode, searchCity } from '../lib/weather'
 import type { Place } from '../types'
 
 const POPULAR = ['tokyo', 'shanghai', 'seoul', 'newyork', 'london', 'paris'].map((id) => CITIES.find((c) => c.id === id)!)
@@ -17,7 +17,10 @@ export function CityPicker({ onPick, onCancel }: { onPick: (p: Place) => void; o
     if (!navigator.geolocation) return setStatus('city.noGeo')
     setStatus('city.locating')
     navigator.geolocation.getCurrentPosition(
-      (pos) => onPick({ name: '', lat: pos.coords.latitude, lon: pos.coords.longitude, current: true }),
+      async ({ coords: { latitude: lat, longitude: lon } }) => {
+        const found = await reverseGeocode(lat, lon, lang)
+        onPick({ name: found?.name ?? '', lat, lon, cc: found?.cc, current: true })
+      },
       () => setStatus('city.geoFailed'),
       { timeout: 10000, maximumAge: 30 * 60 * 1000 },
     )

@@ -5,6 +5,15 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>What to Wear</title>
+    <script>
+      // 在样式生效前定好深浅色，避免首屏闪一下
+      ;(function () {
+        var theme = 'auto'
+        try { theme = JSON.parse(localStorage.getItem('wtw:v1:state') || '{}').theme || 'auto' } catch (e) {}
+        if (theme === 'auto') theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+        document.documentElement.dataset.theme = theme
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

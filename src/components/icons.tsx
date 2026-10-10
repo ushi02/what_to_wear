@@ -58,8 +58,7 @@ const FlipFlop = custom('M128,24 C170,24 184,66 180,120 C176,180 166,232 128,232
 const Loafer = custom('M24,184 V150 C24,128 44,112 72,104 L104,86 C112,116 152,116 164,94 C204,104 232,136 232,166 V184 Z', 'M24,200 H232 M100,112 C120,134 148,134 166,112')
 
 const ITEM_ICONS: Record<string, Icon | ReturnType<typeof custom>> = {
-  'tee-white': TShirt,
-  'tee-black': TShirt,
+  tee: TShirt,
   shirt: ShirtFolded,
   longsleeve: LongSleeve,
   thermal: Thermal,
@@ -74,7 +73,7 @@ const ITEM_ICONS: Record<string, Icon | ReturnType<typeof custom>> = {
   jeans: Pants,
   'fleece-pants': Pants,
   canvas: Sneaker,
-  'sneaker-white': Sneaker,
+  sneaker: Sneaker,
   'sneaker-mesh': SneakerMove,
   leather: Loafer,
   boots: Boot,
@@ -88,7 +87,7 @@ const ITEM_ICONS: Record<string, Icon | ReturnType<typeof custom>> = {
 
 /** 旧版自定义衣物没记模板 id，只能从 emoji 反推 */
 const EMOJI_FALLBACK: Record<string, string> = {
-  '👕': 'tee-white', '👔': 'shirt', '👚': 'longsleeve', '🌡️': 'thermal', '🧶': 'sweater', '🧥': 'light-down', '🌬️': 'windbreaker',
+  '👕': 'tee', '👔': 'shirt', '👚': 'longsleeve', '🌡️': 'thermal', '🧶': 'sweater', '🧥': 'light-down', '🌬️': 'windbreaker',
   '🩳': 'shorts', '👖': 'chinos', '👟': 'canvas', '👞': 'leather', '🥾': 'boots', '🩴': 'sandals',
   '☂️': 'umbrella', '🧢': 'cap', '🕶️': 'sunglasses', '🧣': 'scarf', '🧤': 'gloves',
 }
