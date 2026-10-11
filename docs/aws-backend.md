@@ -44,6 +44,22 @@
 
 > **关键安全设计**：用户 ID 只从验证过的令牌里取，绝不信任前端传上来的 ID，所以 A 不可能读到 B 的数据。
 
+### 跨域（CORS）
+
+网页在 `xxx.cloudfront.net`，接口在 `xxx.execute-api.ap-northeast-1.amazonaws.com`，两个域名不同。浏览器默认会拦截这种**跨域请求**，所以前端要写接口的完整地址，例如 `fetch('https://xxx.execute-api.../state')`，不能写 `fetch('/state')`。还要在 API Gateway 里开启 CORS：
+
+- 允许的来源：自己的网址 + `http://localhost:5173`（本地开发用）
+- 允许的方法：`GET`、`PUT`
+- 允许的请求头：`Authorization`、`Content-Type`
+
+HTTP API 在控制台里就有 CORS 设置项，不用改 Lambda 代码。
+
+### 登录相关的配置
+
+- Cognito 用户池选 **Essentials** 档（默认就是）。Lite 和 Essentials 每月 1 万活跃用户以内免费，而且永久免费；**Plus 档没有免费额度**，不要开。
+- 应用客户端选**公共客户端（不生成 client secret）**，登录流程用**授权码 + PKCE**。网页代码谁都看得到，存不住 secret。
+- 登录后的回调地址（callback URL）和退出后的跳转地址都填两个：正式网址 + `http://localhost:5173`，否则本地开发时登录不了。
+
 ## 4. 数据怎么存
 
 现在的 `AppState`（`src/lib/storage.ts`）本来就是一个小 JSON，所以**每个用户存一条**：
@@ -61,6 +77,7 @@
 
 - **localStorage 保留**，作为本地缓存：打开时先显示本地数据，后台再拉云端。不登录也照样能用。
 - **延迟上传**：修改后等一两秒再上传，连续点击只发一次请求。
+- **关页面前补发**：如果用户改完马上关掉页面，等待中的那次上传就丢了。所以要监听 `visibilitychange`，页面隐藏时立刻上传，`fetch` 带上 `keepalive: true`，页面关掉后请求也能发完。
 - **冲突处理**（手机和电脑同时改）：
   - 简单做法：以 `updatedAt` 较新的为准（最后写入者胜）。
   - 严谨做法：DynamoDB **条件写入**。带上版本号，版本对不上就拒绝写入，前端重新拉取后再合并。
@@ -124,14 +141,25 @@ export const handler = async (event: any) => {
     return { statusCode: 200, body: JSON.stringify(Item?.state ?? null) }
   }
 
-  // PUT：整份覆盖
-  const state = JSON.parse(event.body ?? '{}')
+  // PUT：整份覆盖。先检查一下，别人往里塞垃圾数据就直接拒绝
+  const body = event.body ?? ''
+  if (body.length > 50_000) return { statusCode: 413 }
+  let state: any
+  try {
+    state = JSON.parse(body)
+  } catch {
+    return { statusCode: 400 }
+  }
+  if (typeof state !== 'object' || state === null || !Array.isArray(state.items)) return { statusCode: 400 }
+
   await db.send(new PutCommand({ TableName: TABLE, Item: { userId, state, updatedAt: Date.now() } }))
   return { statusCode: 204 }
 }
 ```
 
-前端主要改 `src/lib/storage.ts`：写 localStorage 的同时调用 `fetch('/state')`。登录可以用 AWS 官方的 Amplify 库，也可以用通用的 OIDC 库。
+一个人的衣橱 JSON 只有几 KB，50 KB 的上限很宽松；DynamoDB 单条记录本身最多 400 KB。
+
+前端主要改 `src/lib/storage.ts`：写 localStorage 的同时调用接口（完整地址，见第 3 节的 CORS）。登录可以用 AWS 官方的 Amplify 库，也可以用通用的 OIDC 库。
 
 ## 7. 权限（IAM）：AWS 学习的重点
 
@@ -153,16 +181,38 @@ AWS 里任何东西想访问别的东西，都要有明确授权，这套机制�
 
 ## 9. 费用
 
-个人项目、几个朋友在用的规模下：
+估算前提：每个用户每天打开 3 次、修改 2 次，一个月大约 150 次请求。
 
-- Lambda、DynamoDB：用量离免费额度很远
-- Cognito：有较大的免费月活用户额度
-- CloudFront、S3：每月几分钱的量级
+| 服务 | 免费额度 | ~20 人（约 3 千次请求/月） | ~1000 人（约 15 万次请求/月） |
+|---|---|---|---|
+| Cognito（Essentials） | 1 万活跃用户/月，永久免费 | $0 | $0 |
+| Lambda | 100 万次请求/月，永久免费 | $0 | $0 |
+| DynamoDB（按需模式） | 25 GB 存储，永久免费；读写按次收费 | ≈ $0 | ≈ $0.1–0.4 |
+| API Gateway（HTTP API） | 新账号用赠送额度抵扣 | ≈ $0.004 | ≈ $0.2 |
+| CloudFront | 有 $0/月的免费方案 | $0 | $0 |
+| S3（网页约 1 MB） | 用赠送额度抵扣 | < $0.01 | < $0.01 |
+| CloudWatch 日志 | 5 GB/月免费 | $0 | $0 |
+| **合计** | | **≈ $0** | **< $1/月** |
 
-实际基本是 **0 到每月几美元**。
+**可选的开销**：想用自己的域名，域名大约 $10–15 一年，Route 53 托管再加 $0.5 一个月。不用的话，就用 `xxx.cloudfront.net`。
 
-> ⚠️ AWS 在 2025 年改过新账号的免费套餐政策（现在是"赠送额度 + 免费期"的形式），具体以官网为准。
-> **开账号第一件事：设预算告警**，比如超过 $5 就发邮件。
+### 9.1 免费套餐：6 个月后账号会关闭
+
+2025 年 7 月 15 日以后新开的账号，注册时二选一：
+
+- **Free plan**：送 $100，完成新手任务最多再送 $100。不会扣费，但 **6 个月到期或额度用完，账号就关闭**，网站也跟着下线；之后有 90 天可以升级找回。
+- **Paid plan**：同样送这些额度，用完以后按量付费。
+
+学习阶段选 Free plan。想让网站长期在线，到期前升级成 Paid plan。上表的服务大多有**永久免费额度**，升级以后照样几乎不花钱。
+
+### 9.2 会让人多花钱的坑
+
+- **NAT Gateway**：Lambda 放进 VPC 又要访问外网时会用到，在东京大约 **$45 一个月**，没人用也照样收钱。新手被意外扣费，最常见的原因就是它。本方案不用 VPC。
+- **RDS 数据库**：按小时收费，没人用也要付钱。
+- **Cognito Plus 档**、**WAF 防火墙**这类额外的安全功能，不要随手打开。
+- **日志不设保留期限**会一直累积：Lambda 的日志组保留期设成 7 到 14 天。
+
+> **开账号第一件事：设预算告警。** 建一个 Zero spend budget（出现 1 分钱费用就发邮件），或者超过 $5 就提醒的月预算。
 
 ## 10. 和另外两个方案比，AWS 好在哪
 
@@ -207,7 +257,7 @@ AWS 里任何东西想访问别的东西，都要有明确授权，这套机制�
 
 ## 11. 建议的学习顺序（AWS）
 
-1. **注册账号**：开启 MFA，创建管理员 IAM 用户，设预算告警。
+1. **注册账号**：选 Free plan（见 9.1），给 root 开启 MFA，设预算告警，区域选东京（ap-northeast-1），用 IAM Identity Center 建一个日常用的管理员账号。
 2. **部署前端**：S3 + CloudFront 托管现在的 `dist/`，网站上线。
 3. **后端**：建 DynamoDB 表，写 Lambda，挂到 API Gateway 上。先不加登录，用 `curl` 测通读写。
 4. **登录**：加 Cognito，给 API Gateway 配置 JWT 验证。
