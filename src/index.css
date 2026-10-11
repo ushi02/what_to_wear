@@ -140,19 +140,16 @@ input, select {
 /* ---------- top bar & tabs ---------- */
 .topbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 8px 0 12px; }
 .topbar h1 { font-size: var(--fs-xl); font-weight: 700; letter-spacing: -0.03em; }
-/* 标题：干净的粗体字标，下面一道芥末色明线；鼠标移上去明线像在走针 */
+/* 标题：干净的粗体字标，下面一道和字同色的虚线明线 */
 .topbar h1.brand { display: inline-flex; }
 .brand-label {
   font-family: 'Bricolage Grotesque Variable', var(--font-display); font-weight: 800;
   font-size: 1.75rem; letter-spacing: -0.02em; line-height: 1.1; color: var(--text);
   padding-bottom: 7px;
-  background: repeating-linear-gradient(90deg, var(--stitch) 0 6px, transparent 6px 10px) repeat-x 0 100% / 10px 2px;
+  background: repeating-linear-gradient(90deg, var(--text) 0 6px, transparent 6px 10px) repeat-x 0 100% / 10px 2px;
 }
 /* 中文没有 Bricolage 的字形，用系统粗体，字距放开一点 */
 :root[lang^='zh'] .brand-label { font-family: 'PingFang SC', 'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif; font-weight: 700; letter-spacing: 0.02em; }
-.topbar h1.brand:hover .brand-label { animation: sew 0.8s linear infinite; }
-@keyframes sew { to { background-position-x: 20px; } }
-@media (prefers-reduced-motion: reduce) { .topbar h1.brand:hover .brand-label { animation: none; } }
 .settings { display: flex; gap: 8px; }
 
 .tabs { display: flex; gap: 6px; margin-bottom: 14px; overflow-x: auto; }
