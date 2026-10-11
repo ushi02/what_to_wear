@@ -35,7 +35,7 @@ export function WardrobeView({ items, onDisown, onOwn, onWishlist, onAddCustom, 
                 <div key={i.id} className="closet-item">
                   <span className={`closet-icon cat-${i.category}`} aria-hidden><ItemIcon item={i} size={30} /></span>
                   <span className="closet-name">{itemName(i)}</span>
-                  <button className="link small" onClick={() => (i.custom ? onRemoveCustom(i.id) : onDisown(i.id))}>
+                  <button className="closet-btn" onClick={() => (i.custom ? onRemoveCustom(i.id) : onDisown(i.id))}>
                     {t(i.custom ? 'wardrobe.delete' : 'wardrobe.dontHave')}
                   </button>
                 </div>
@@ -54,8 +54,8 @@ export function WardrobeView({ items, onDisown, onOwn, onWishlist, onAddCustom, 
                 <span className={`closet-icon cat-${i.category}`} aria-hidden><ItemIcon item={i} size={30} /></span>
                 <span className="closet-name">{itemName(i)}</span>
                 <span className="closet-actions">
-                  {!i.wishlist && <button className="link small" onClick={() => onWishlist(i.id, true)}>+ {t('wardrobe.want')}</button>}
-                  <button className="link small" onClick={() => onOwn(i.id)}>{t('wardrobe.haveIt')}</button>
+                  {!i.wishlist && <button className="closet-btn" onClick={() => onWishlist(i.id, true)}>+ {t('wardrobe.want')}</button>}
+                  <button className="closet-btn" onClick={() => onOwn(i.id)}>{t('wardrobe.haveIt')}</button>
                 </span>
               </div>
             ))}

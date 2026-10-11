@@ -48,7 +48,9 @@ export default function App() {
     <I18nContext.Provider value={i18n}>
       <div className="app">
         <header className="topbar">
-          <h1>{t('app.title')}</h1>
+          <h1 className="brand">
+            <span className="brand-label">{t('app.title')}</span>
+          </h1>
           <div className="settings">
             <div className="seg small" role="group" aria-label="Language">
               {LANGS.map((l) => (

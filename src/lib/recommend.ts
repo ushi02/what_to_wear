@@ -6,6 +6,9 @@ export const RAIN_MM = 0.5
 export const WINDY_KMH = 30
 export const HIGH_UV = 6
 export const BIG_SWING = 10
+/** 晚上体感比白天最高低这么多，就提醒晚归带外套 */
+export const EVENING_DROP = 5
+export const EVENING_FROM = 19
 /** 和前一天差这么多才算“变冷/变暖” */
 export const DAY_DIFF = 2
 
@@ -203,6 +206,16 @@ export function recommend(day: DayWeather, items: Item[]): Recommendation {
     tips.push(m('tip.swing', { d: { diff: s.feelsMax - s.feelsMin } }))
   }
   if (s.rainy && !needOuter) tips.push(m('tip.umbrellaEnough'))
+  // 白天不用外套、但晚上会凉下来：提醒晚归的人
+  const evening = day.hours.filter((h) => h.hour >= EVENING_FROM)
+  if (!needOuter && evening.length) {
+    const coolest = evening.reduce((a, b) => (b.feels < a.feels ? b : a))
+    if (s.feelsMax - coolest.feels >= EVENING_DROP) tips.push(m('tip.evening', { h: { hour: coolest.hour }, t: { temp: coolest.feels } }))
+  }
+  if (s.maxUv >= HIGH_UV) tips.push(m('tip.uv', { u: s.maxUv }))
+  if (windy) tips.push(m('tip.wind', { w: { wind: s.maxWind } }))
+  // 什么都没触发也给一句，免得这块整个消失
+  if (!tips.length) tips.push(m('tip.calm'))
 
   return { summary: s, picks, accessories, tips, shopping }
 }

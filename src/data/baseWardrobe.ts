@@ -17,7 +17,7 @@ export const BASE_WARDROBE: BaseItem[] = [
 
   // 外套（按早晚最低体感选）
   { id: 'windbreaker', name: '防风防泼水夹克', emoji: '🌬️', category: 'outer', range: [9, 22], windproof: true },
-  { id: 'light-down', name: '薄羽绒 / 棉服', emoji: '🧥', category: 'outer', range: [1, 12] },
+  { id: 'light-down', name: '薄羽绒服', emoji: '🧥', category: 'outer', range: [1, 12] },
   { id: 'heavy-down', name: '厚羽绒服', emoji: '🧥', category: 'outer', range: [-30, 3], windproof: true },
 
   // 下装
@@ -30,9 +30,9 @@ export const BASE_WARDROBE: BaseItem[] = [
   { id: 'canvas', name: '帆布鞋', emoji: '👟', category: 'shoes', range: [6, 32], rain: 1 },
   { id: 'sneaker', name: '板鞋', emoji: '👟', category: 'shoes', range: [4, 32], rain: 1 },
   { id: 'sneaker-mesh', name: '网面运动鞋', emoji: '👟', category: 'shoes', range: [4, 35], rain: 0 },
-  { id: 'leather', name: '皮鞋 / 乐福鞋', emoji: '👞', category: 'shoes', range: [-5, 30], rain: 2 },
-  { id: 'boots', name: '防水短靴 / 雨靴', emoji: '🥾', category: 'shoes', range: [-30, 22], rain: 3 },
-  { id: 'sandals', name: '凉鞋 / 拖鞋', emoji: '🩴', category: 'shoes', range: [27, 45], rain: 1 },
+  { id: 'leather', name: '皮鞋', emoji: '👞', category: 'shoes', range: [-5, 30], rain: 2 },
+  { id: 'boots', name: '防水靴', emoji: '🥾', category: 'shoes', range: [-30, 22], rain: 3 },
+  { id: 'sandals', name: '凉鞋', emoji: '🩴', category: 'shoes', range: [27, 45], rain: 1 },
 
   // 配件
   { id: 'umbrella', name: '折叠伞', emoji: '☂️', category: 'accessory', range: [-30, 45], need: 'rain' },

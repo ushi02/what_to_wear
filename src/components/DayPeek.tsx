@@ -39,8 +39,8 @@ export function DayPeek({ day, prev, prevIsToday, label, items, onOpen }: Props)
         <span className="peek-low">/ {temp(s.tempMin, false)}</span>
       </div>
       <div className="peek-cond">
-        {t(`cond.${s.condition}` as Key)}
-        {s.maxPrecipProb >= 20 && <> · <Umbrella weight="fill" /> {t('peek.rain', { p: s.maxPrecipProb })}</>}
+        <span>{t(`cond.${s.condition}` as Key)}</span>
+        {s.maxPrecipProb >= 20 && <span><Umbrella weight="fill" /> {t('peek.rain', { p: s.maxPrecipProb })}</span>}
       </div>
       {cmp && (
         <div className={`trend trend--${cmp.trend}`}>

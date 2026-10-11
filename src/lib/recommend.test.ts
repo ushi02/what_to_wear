@@ -99,6 +99,23 @@ describe('recommend', () => {
   })
 })
 
+describe('tips', () => {
+  const keys = (d: DayWeather) => recommend(d, freshWardrobe()).tips.map((t) => t.key)
+
+  it('白天热、晚上凉：提醒晚归带外套', () => {
+    expect(keys(day({ min: 19, max: 28 }))).toContain('tip.evening')
+  })
+
+  it('紫外线强、风大各有提示', () => {
+    expect(keys(day({ min: 20, max: 26, uv: 8 }))).toContain('tip.uv')
+    expect(keys(day({ min: 20, max: 26, wind: 40 }))).toContain('tip.wind')
+  })
+
+  it('什么都没触发时也有一句', () => {
+    expect(keys(day({ min: 22, max: 25 }))).toEqual(['tip.calm'])
+  })
+})
+
 describe('compare', () => {
   const keys = (c: ReturnType<typeof compare>) => c.map((x) => x.msg.key)
 

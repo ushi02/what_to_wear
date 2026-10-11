@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useI18n, type Key } from '../i18n'
-import type { Item } from '../types'
+import { CATEGORIES, type Item } from '../types'
 
 interface Props {
   items: Item[]
@@ -30,8 +30,12 @@ export function AddItemForm({ items, title, placeholder, onAdd }: Props) {
         <label className="muted small stack-tight">
           {t('wardrobe.asType')}
           <select value={template} onChange={(e) => setTemplate(e.target.value)}>
-            {items.filter((i) => !i.custom).map((i) => (
-              <option key={i.id} value={i.id}>{t(`cat.${i.category}` as Key)} · {itemName(i)}</option>
+            {CATEGORIES.map((c) => (
+              <optgroup key={c} label={t(`cat.${c}` as Key)}>
+                {items.filter((i) => !i.custom && i.category === c).map((i) => (
+                  <option key={i.id} value={i.id}>{itemName(i)}</option>
+                ))}
+              </optgroup>
             ))}
           </select>
         </label>

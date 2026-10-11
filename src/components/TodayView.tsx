@@ -46,7 +46,7 @@ export function TodayView({ place, items, onChangePlace, onWishlist }: Props) {
     <div className="hero-place-row">
       <button className="hero-place" onClick={onChangePlace}>
         {flag(place.cc)} {placeName(place)}
-        {place.cc && <span className="hero-country"> · {country(place.cc)}</span>}
+        {place.cc && <span className="hero-country">, {country(place.cc)}</span>}
       </button>
       <button className="hero-change" onClick={onChangePlace}>
         <ArrowsClockwise size={14} weight="bold" /> {t('city.change')}
@@ -111,7 +111,7 @@ export function TodayView({ place, items, onChangePlace, onWishlist }: Props) {
             <span className="hero-icon" aria-hidden><SceneIcon scene={scene} night={night} size={60} /></span>
             <span className="hero-temp">{temp(s.tempMax, false)}</span>
             <div className="hero-side">
-              <div className="hero-cond">{t(`cond.${s.condition}` as Key)} · {i18n.date(day.date)}</div>
+              <div className="hero-cond">{t(`cond.${s.condition}` as Key)} <span className="hero-date">{i18n.date(day.date)}</span></div>
               <div>{t('wx.range', { min: { temp: s.tempMin }, max: { temp: s.tempMax } })}</div>
               <div>{t('wx.feels', { min: { temp: s.feelsMin }, max: { temp: s.feelsMax } })}</div>
             </div>
