@@ -281,3 +281,18 @@ AWS 里任何东西想访问别的东西，都要有明确授权，这套机制�
 | 桶策略 | — | 只允许这个分发 `s3:GetObject` |
 
 重新发布：`npm run deploy`（见 `scripts/deploy.sh`）。`assets/` 文件名带哈希，缓存一年；`index.html` 设为 `no-cache`，发布后立刻生效。
+
+### 后端（第 3 步，2026-10-13，暂未接登录）
+
+| 资源 | 名称 / ID | 说明 |
+|---|---|---|
+| 接口地址 | https://3vq36jfo5i.execute-api.ap-southeast-2.amazonaws.com/state | `GET` 读取，`PUT` 整份覆盖 |
+| DynamoDB 表 | `wtw-users` | 主键 `userId`，按需计费，开启删除保护 |
+| Lambda | `wtw-state` | Node.js 24，arm64，256 MB，超时 5 秒，代码在 `backend/state/` |
+| IAM 角色 | `wtw-state-lambda` | 只能对 `wtw-users` 做 `GetItem` / `PutItem`，只能写自己的日志组 |
+| 日志组 | `/aws/lambda/wtw-state` | 保留 14 天 |
+| HTTP API | `wtw-api`（`3vq36jfo5i`） | 路由 `GET /state`、`PUT /state`；限流 10 次/秒，突发 20；CORS 只允许正式网址和 `localhost:5173` |
+
+更新后端代码：`npm run deploy:api`（见 `scripts/deploy-api.sh`）。
+
+> **临时开关**：Lambda 环境变量 `ALLOW_TEST_USER=1` 让没有令牌的请求都当作 `test-user`，方便用 `curl` 测试。第 4 步接上 Cognito 后要删掉这个变量，否则谁都能读写 `test-user`。
