@@ -46,7 +46,7 @@
 
 ### 跨域（CORS）
 
-网页在 `xxx.cloudfront.net`，接口在 `xxx.execute-api.ap-northeast-1.amazonaws.com`，两个域名不同。浏览器默认会拦截这种**跨域请求**，所以前端要写接口的完整地址，例如 `fetch('https://xxx.execute-api.../state')`，不能写 `fetch('/state')`。还要在 API Gateway 里开启 CORS：
+网页在 `xxx.cloudfront.net`，接口在 `xxx.execute-api.ap-southeast-2.amazonaws.com`，两个域名不同。浏览器默认会拦截这种**跨域请求**，所以前端要写接口的完整地址，例如 `fetch('https://xxx.execute-api.../state')`，不能写 `fetch('/state')`。还要在 API Gateway 里开启 CORS：
 
 - 允许的来源：自己的网址 + `http://localhost:5173`（本地开发用）
 - 允许的方法：`GET`、`PUT`
@@ -207,7 +207,7 @@ AWS 里任何东西想访问别的东西，都要有明确授权，这套机制�
 
 ### 9.2 会让人多花钱的坑
 
-- **NAT Gateway**：Lambda 放进 VPC 又要访问外网时会用到，在东京大约 **$45 一个月**，没人用也照样收钱。新手被意外扣费，最常见的原因就是它。本方案不用 VPC。
+- **NAT Gateway**：Lambda 放进 VPC 又要访问外网时会用到，在悉尼大约 **$45 一个月**，没人用也照样收钱。新手被意外扣费，最常见的原因就是它。本方案不用 VPC。
 - **RDS 数据库**：按小时收费，没人用也要付钱。
 - **Cognito Plus 档**、**WAF 防火墙**这类额外的安全功能，不要随手打开。
 - **日志不设保留期限**会一直累积：Lambda 的日志组保留期设成 7 到 14 天。
@@ -257,7 +257,7 @@ AWS 里任何东西想访问别的东西，都要有明确授权，这套机制�
 
 ## 11. 建议的学习顺序（AWS）
 
-1. **注册账号**：选 Free plan（见 9.1），给 root 开启 MFA，设预算告警，区域选东京（ap-northeast-1），用 IAM Identity Center 建一个日常用的管理员账号。
+1. **注册账号**：选 Free plan（见 9.1），给 root 开启 MFA，设预算告警，区域用 project 指定的悉尼（ap-southeast-2），用 IAM Identity Center 建一个日常用的管理员账号。
 2. **部署前端**：S3 + CloudFront 托管现在的 `dist/`，网站上线。
 3. **后端**：建 DynamoDB 表，写 Lambda，挂到 API Gateway 上。先不加登录，用 `curl` 测通读写。
 4. **登录**：加 Cognito，给 API Gateway 配置 JWT 验证。
@@ -265,3 +265,19 @@ AWS 里任何东西想访问别的东西，都要有明确授权，这套机制�
 6. **自动化**：用 CDK 把整套资源写成代码，配置 GitHub Actions 自动部署。
 
 前两步一个晚上就能做完。第 3、4 步是核心，大部分 AWS 概念都会在这里碰到。
+
+## 12. 实际部署记录
+
+区域：悉尼 `ap-southeast-2`（CloudFront 是全球服务，API 调用走 `us-east-1`）。
+
+### 前端（第 2 步，2026-10-13）
+
+| 资源 | 名称 / ID | 说明 |
+|---|---|---|
+| 网址 | https://dxms6lt12il94.cloudfront.net | |
+| S3 桶 | `wtw-site-<账号ID>` | 私有，阻止所有公共访问，SSE-S3 加密 |
+| OAC | `wtw-site-oac`（`E26VBOU61147GJ`） | CloudFront 用 SigV4 签名读取 S3 |
+| CloudFront 分发 | `EORJPY4T2JXFT` | 跳转 HTTPS，`CachingOptimized` 缓存策略，`SecurityHeadersPolicy` 安全头 |
+| 桶策略 | — | 只允许这个分发 `s3:GetObject` |
+
+重新发布：`npm run deploy`（见 `scripts/deploy.sh`）。`assets/` 文件名带哈希，缓存一年；`index.html` 设为 `no-cache`，发布后立刻生效。
