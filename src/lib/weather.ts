@@ -1,6 +1,6 @@
 import { searchLocalCities } from '../data/cities'
 import type { Lang } from '../i18n'
-import type { DayWeather, LastYearWeather, Place } from '../types'
+import type { DayWeather, Place } from '../types'
 import { cacheGet, cacheSet } from './storage'
 
 /** 只看出门时段 */
@@ -67,6 +67,21 @@ export async function searchCity(query: string, lang: Lang): Promise<Place[]> {
   return [...local, ...remote].slice(0, 8)
 }
 
+/**
+ * 坐标 → 地名。Open-Meteo 没有反向地理编码，用 BigDataCloud 的免 key 客户端接口；
+ * 失败时返回 undefined，界面退回显示“当前位置”。
+ */
+export async function reverseGeocode(lat: number, lon: number, lang: Lang): Promise<{ name: string; cc?: string } | undefined> {
+  try {
+    const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=${lang}`
+    const data = await getJson<{ city?: string; locality?: string; principalSubdivision?: string; countryCode?: string }>(url)
+    const name = data.city || data.locality || data.principalSubdivision
+    return name ? { name, cc: data.countryCode || undefined } : undefined
+  } catch {
+    return undefined
+  }
+}
+
 interface ForecastResponse {
   hourly: {
     time: string[]
@@ -80,16 +95,23 @@ interface ForecastResponse {
   }
 }
 
-/** 返回今天和明天两天（按当地时区），每天只保留出门时段的逐小时数据 */
-export async function getForecast(place: Place): Promise<DayWeather[]> {
-  const cacheKey = `fc2:${key(place)}:${new Date().toDateString()}`
-  const cached = cacheGet<DayWeather[]>(cacheKey, HOUR)
+export interface Forecast {
+  /** 今天和明天（按当地时区） */
+  days: DayWeather[]
+  /** 昨天，用来比冷暖 */
+  yesterday?: DayWeather
+}
+
+/** 每天只保留出门时段的逐小时数据 */
+export async function getForecast(place: Place): Promise<Forecast> {
+  const cacheKey = `fc3:${key(place)}:${new Date().toDateString()}`
+  const cached = cacheGet<Forecast>(cacheKey, HOUR)
   if (cached) return cached
 
   const url =
     `https://api.open-meteo.com/v1/forecast?latitude=${place.lat}&longitude=${place.lon}` +
     '&hourly=temperature_2m,apparent_temperature,precipitation_probability,precipitation,wind_speed_10m,uv_index,cloud_cover' +
-    '&timezone=auto&forecast_days=2'
+    '&timezone=auto&forecast_days=2&past_days=1'
   const { hourly: h } = await getJson<ForecastResponse>(url)
 
   const days = new Map<string, DayWeather>()
@@ -109,37 +131,9 @@ export async function getForecast(place: Place): Promise<DayWeather[]> {
       cloud: h.cloud_cover[i] ?? 0,
     })
   })
-  const result = [...days.values()]
+  const [yesterday, ...rest] = [...days.values()]
+  const result: Forecast = { days: rest, yesterday }
   cacheSet(cacheKey, result)
   return result
 }
 
-function shiftDate(date: string, years: number, days: number): string {
-  const d = new Date(`${date}T12:00:00Z`)
-  d.setUTCFullYear(d.getUTCFullYear() + years)
-  d.setUTCDate(d.getUTCDate() + days)
-  return d.toISOString().slice(0, 10)
-}
-
-/** 去年同一天前后各 7 天的平均气温和雨天数 */
-export async function getLastYear(place: Place, date: string): Promise<LastYearWeather> {
-  const start = shiftDate(date, -1, -7)
-  const end = shiftDate(date, -1, 7)
-  const cacheKey = `ly:${key(place)}:${start}`
-  const cached = cacheGet<LastYearWeather>(cacheKey, 30 * 24 * HOUR)
-  if (cached) return cached
-
-  const url =
-    `https://archive-api.open-meteo.com/v1/archive?latitude=${place.lat}&longitude=${place.lon}` +
-    `&start_date=${start}&end_date=${end}&daily=temperature_2m_mean,precipitation_sum&timezone=auto`
-  const { daily } = await getJson<{ daily: { temperature_2m_mean: (number | null)[]; precipitation_sum: (number | null)[] } }>(url)
-
-  const temps = daily.temperature_2m_mean.filter((x): x is number => x != null)
-  const result: LastYearWeather = {
-    avgTemp: temps.reduce((a, b) => a + b, 0) / Math.max(temps.length, 1),
-    rainyDays: daily.precipitation_sum.filter((x) => (x ?? 0) >= 1).length,
-    days: daily.precipitation_sum.length,
-  }
-  cacheSet(cacheKey, result)
-  return result
-}

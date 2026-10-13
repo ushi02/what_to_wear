@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { freshWardrobe } from '../data/baseWardrobe'
 import type { DayWeather, HourWeather, Item } from '../types'
-import { recommend } from './recommend'
+import { compare, recommend, summarize } from './recommend'
 
 /** 生成 7–22 点的天气；feels 从 min 线性升到 max 再降回去 */
 function day(opts: { min: number; max: number; prob?: number; mm?: number; wind?: number; uv?: number }): DayWeather {
@@ -42,26 +42,26 @@ describe('recommend', () => {
 
   it('雨天只有匡威时穿匡威，并建议买双防水鞋', () => {
     const rec = recommend(day({ min: 15, max: 20, prob: 80 }), without('boots', 'leather'))
-    expect(['canvas', 'sneaker-white']).toContain(pickOf(rec, 'shoes')?.item?.id)
+    expect(['canvas', 'sneaker']).toContain(pickOf(rec, 'shoes')?.item?.id)
     expect(rec.shopping.map((s) => s.item.id)).toContain('boots')
   })
 
   it('雨天只有网面鞋时凑合穿，给出换袜子提示和购买建议', () => {
-    const rec = recommend(day({ min: 15, max: 20, prob: 80 }), without('boots', 'leather', 'canvas', 'sneaker-white', 'sandals'))
+    const rec = recommend(day({ min: 15, max: 20, prob: 80 }), without('boots', 'leather', 'canvas', 'sneaker', 'sandals'))
     expect(pickOf(rec, 'shoes')?.item?.id).toBe('sneaker-mesh')
     expect(rec.tips.map((t) => t.key)).toContain('tip.socks')
     expect(rec.shopping.length).toBeGreaterThan(0)
   })
 
   it('不下雨时可以穿网面鞋', () => {
-    const items = without('canvas', 'sneaker-white', 'leather')
+    const items = without('canvas', 'sneaker', 'leather')
     const rec = recommend(day({ min: 14, max: 22 }), items)
     expect(pickOf(rec, 'shoes')?.item?.id).toBe('sneaker-mesh')
   })
 
   it('标记"我没有"的衣服不会被推荐', () => {
-    const rec = recommend(day({ min: 24, max: 32 }), without('tee-white'))
-    expect(pickOf(rec, 'top')?.item?.id).toBe('tee-black')
+    const rec = recommend(day({ min: 24, max: 32 }), without('tee'))
+    expect(pickOf(rec, 'top')?.item?.id).not.toBe('tee')
   })
 
   it('炎热天：短袖短裤，不穿外套', () => {
@@ -97,9 +97,41 @@ describe('recommend', () => {
     const rec = recommend(day({ min: 22, max: 28, prob: 70 }), without('umbrella'))
     expect(rec.shopping.map((s) => s.item.id)).toContain('umbrella')
   })
+})
 
-  it('和去年同期对比', () => {
-    const rec = recommend(day({ min: 10, max: 16 }), freshWardrobe(), { avgTemp: 20, rainyDays: 8, days: 15 })
-    expect(rec.tips.map((t) => t.key)).toEqual(expect.arrayContaining(['tip.colder', 'tip.rainyLastYear']))
+describe('tips', () => {
+  const keys = (d: DayWeather) => recommend(d, freshWardrobe()).tips.map((t) => t.key)
+
+  it('白天热、晚上凉：提醒晚归带外套', () => {
+    expect(keys(day({ min: 19, max: 28 }))).toContain('tip.evening')
+  })
+
+  it('紫外线强、风大各有提示', () => {
+    expect(keys(day({ min: 20, max: 26, uv: 8 }))).toContain('tip.uv')
+    expect(keys(day({ min: 20, max: 26, wind: 40 }))).toContain('tip.wind')
+  })
+
+  it('什么都没触发时也有一句', () => {
+    expect(keys(day({ min: 22, max: 25 }))).toEqual(['tip.calm'])
+  })
+})
+
+describe('compare', () => {
+  const keys = (c: ReturnType<typeof compare>) => c.map((x) => x.msg.key)
+
+  it('和昨天比冷暖', () => {
+    const s = summarize(day({ min: 10, max: 16 }))
+    const c = compare(s, day({ min: 16, max: 22 }))
+    expect(keys(c)).toEqual(['cmp.colder.yesterday'])
+    expect(c.map((x) => x.trend)).toEqual(['down'])
+  })
+
+  it('差得不多就说差不多；看明天时和今天比', () => {
+    const s = summarize(day({ min: 10, max: 16 }))
+    expect(keys(compare(s, day({ min: 11, max: 16 }), true))).toEqual(['cmp.same.today'])
+  })
+
+  it('没有数据就不比', () => {
+    expect(compare(summarize(day({ min: 10, max: 16 })))).toEqual([])
   })
 })

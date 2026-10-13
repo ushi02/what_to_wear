@@ -1,0 +1,41 @@
+# CI：每次 push 和 PR 都跑测试、lint、构建，并检查 CDK 代码能不能生成模板。
+# 这里不碰 AWS（不需要任何密钥）；部署由 AWS CodeBuild 负责，见 buildspec.yml。
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            infra/package-lock.json
+
+      - name: Install
+        run: |
+          npm ci
+          npm ci --prefix infra
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      # 只在本地生成 CloudFormation 模板，不连 AWS
+      - name: CDK synth
+        working-directory: infra
+        run: |
+          npx tsc --noEmit
+          npx cdk synth --strict -q

@@ -1,11 +1,16 @@
 import type { Key, Msg } from '../i18n'
-import type { AccessoryNeed, Category, DayWeather, Item, LastYearWeather } from '../types'
+import type { AccessoryNeed, Category, DayWeather, Item } from '../types'
 
 export const RAIN_PROB = 50
 export const RAIN_MM = 0.5
 export const WINDY_KMH = 30
 export const HIGH_UV = 6
 export const BIG_SWING = 10
+/** 晚上体感比白天最高低这么多，就提醒晚归带外套 */
+export const EVENING_DROP = 5
+export const EVENING_FROM = 19
+/** 和前一天差这么多才算“变冷/变暖” */
+export const DAY_DIFF = 2
 
 export interface Summary {
   feelsMin: number
@@ -141,7 +146,7 @@ export function choose(items: Item[], category: Category, t: number, opts: Choos
 
 const m = (key: Key, params?: Msg['params']): Msg => ({ key, params })
 
-export function recommend(day: DayWeather, items: Item[], lastYear?: LastYearWeather): Recommendation {
+export function recommend(day: DayWeather, items: Item[]): Recommendation {
   const s = summarize(day)
   const picks: Pick[] = []
   const tips: Msg[] = []
@@ -201,13 +206,42 @@ export function recommend(day: DayWeather, items: Item[], lastYear?: LastYearWea
     tips.push(m('tip.swing', { d: { diff: s.feelsMax - s.feelsMin } }))
   }
   if (s.rainy && !needOuter) tips.push(m('tip.umbrellaEnough'))
-  if (lastYear) {
-    const diff = (s.tempMin + s.tempMax) / 2 - lastYear.avgTemp
-    if (Math.abs(diff) >= 3) tips.push(m(diff > 0 ? 'tip.warmer' : 'tip.colder', { d: { diff: Math.abs(diff) } }))
-    if (lastYear.days > 0 && lastYear.rainyDays / lastYear.days >= 0.4) {
-      tips.push(m('tip.rainyLastYear', { n: lastYear.rainyDays }))
-    }
+  // 白天不用外套、但晚上会凉下来：提醒晚归的人
+  const evening = day.hours.filter((h) => h.hour >= EVENING_FROM)
+  if (!needOuter && evening.length) {
+    const coolest = evening.reduce((a, b) => (b.feels < a.feels ? b : a))
+    if (s.feelsMax - coolest.feels >= EVENING_DROP) tips.push(m('tip.evening', { h: { hour: coolest.hour }, t: { temp: coolest.feels } }))
   }
+  if (s.maxUv >= HIGH_UV) tips.push(m('tip.uv', { u: s.maxUv }))
+  if (windy) tips.push(m('tip.wind', { w: { wind: s.maxWind } }))
+  // 什么都没触发也给一句，免得这块整个消失
+  if (!tips.length) tips.push(m('tip.calm'))
 
   return { summary: s, picks, accessories, tips, shopping }
+}
+
+export type Trend = 'up' | 'down' | 'flat'
+export interface Comparison {
+  trend: Trend
+  msg: Msg
+}
+
+const mean = (s: Summary) => (s.tempMin + s.tempMax) / 2
+
+/**
+ * 和前一天比冷暖，按出门时段的 (最低+最高)/2 算。
+ * prevIsToday：看明天时，“前一天”就是今天。
+ */
+export function compare(s: Summary, prev?: DayWeather, prevIsToday = false): Comparison[] {
+  const out: Comparison[] = []
+  if (prev?.hours.length) {
+    const d = mean(s) - mean(summarize(prev))
+    const ref = prevIsToday ? 'today' : 'yesterday'
+    out.push(
+      Math.abs(d) < DAY_DIFF
+        ? { trend: 'flat', msg: { key: `cmp.same.${ref}` as Key } }
+        : { trend: d > 0 ? 'up' : 'down', msg: { key: `cmp.${d > 0 ? 'warmer' : 'colder'}.${ref}` as Key, params: { d: { diff: Math.abs(d) } } } },
+    )
+  }
+  return out
 }

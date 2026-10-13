@@ -13,16 +13,6 @@ export interface Msg {
   params?: Record<string, Param>
 }
 
-export function detectLang(): Lang {
-  const langs = typeof navigator === 'undefined' ? [] : navigator.languages ?? [navigator.language]
-  for (const l of langs) {
-    if (l.startsWith('zh')) return 'zh'
-    if (l.startsWith('ja')) return 'ja'
-    if (l.startsWith('en')) return 'en'
-  }
-  return 'en'
-}
-
 export function detectUnit(): Unit {
   const l = typeof navigator === 'undefined' ? '' : navigator.language
   return /-(US|LR|MM)$/i.test(l) ? 'imperial' : 'metric'
@@ -40,10 +30,9 @@ export function makeI18n(lang: Lang, unit: Unit) {
   const wind = (kmh: number) => (imperial ? `${Math.round(kmh / 1.609)} mph` : `${Math.round(kmh)} km/h`)
   const hour = (h: number) => {
     if (lang === 'zh') return `${h} 点`
-    if (lang === 'ja') return `${h}時`
     return h === 12 ? '12 PM' : h > 12 ? `${h - 12} PM` : `${h} AM`
   }
-  const hourShort = (h: number) => (lang === 'en' ? (h === 12 ? '12p' : h > 12 ? `${h - 12}p` : `${h}a`) : lang === 'ja' ? `${h}時` : `${h}点`)
+  const hourShort = (h: number) => (lang === 'en' ? (h === 12 ? '12p' : h > 12 ? `${h - 12}p` : `${h}a`) : `${h}点`)
 
   const fmt = (p: Param): string => {
     if (typeof p === 'number') return String(Math.round(p))
@@ -70,7 +59,7 @@ export function makeI18n(lang: Lang, unit: Unit) {
     hourShort,
     itemName: (i: Item) => (i.custom ? i.name : t(`item.${i.id}` as Key)),
     placeName: (p: Place) => {
-      if (p.current) return t('city.current')
+      if (p.current && !p.name) return t('city.current')
       const city = p.cityId ? CITIES.find((c) => c.id === p.cityId) : undefined
       return city ? city[lang] : p.name
     },

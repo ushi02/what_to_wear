@@ -10,8 +10,8 @@ export interface Item {
   /** 只有自定义衣物用；基础衣橱的名字走 i18n（item.<id>） */
   name: string
   emoji: string
-  /** emoji 没有黑色款，用滤镜压暗 */
-  dark?: boolean
+  /** 自定义衣物沿用的模板 id，决定显示哪个图标 */
+  icon?: string
   category: Category
   /** 适合的体感温度区间 [min, max]，°C */
   range: [number, number]
@@ -49,10 +49,4 @@ export interface HourWeather {
 export interface DayWeather {
   date: string
   hours: HourWeather[]
-}
-
-export interface LastYearWeather {
-  avgTemp: number
-  rainyDays: number
-  days: number
 }

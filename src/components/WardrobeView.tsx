@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useI18n, type Key } from '../i18n'
 import { CATEGORIES, type Item } from '../types'
+import { AddItemForm } from './AddItemForm'
+import { ItemIcon } from './icons'
 
 interface Props {
   items: Item[]
@@ -14,18 +16,9 @@ interface Props {
 
 export function WardrobeView({ items, onDisown, onOwn, onWishlist, onAddCustom, onRemoveCustom, onReset }: Props) {
   const { t, itemName } = useI18n()
-  const [name, setName] = useState('')
-  const [template, setTemplate] = useState(items[0]?.id ?? '')
   const [confirmReset, setConfirmReset] = useState(false)
   const missing = items.filter((i) => !i.owned)
   const catLabel = (c: string) => t(`cat.${c}` as Key)
-
-  const add = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!name.trim()) return
-    onAddCustom(name.trim(), template)
-    setName('')
-  }
 
   return (
     <>
@@ -40,9 +33,9 @@ export function WardrobeView({ items, onDisown, onOwn, onWishlist, onAddCustom, 
             <div className="closet">
               {owned.map((i) => (
                 <div key={i.id} className="closet-item">
-                  <span className={`closet-emoji ${i.dark ? 'emoji-dark' : ''}`} aria-hidden>{i.emoji}</span>
+                  <span className={`closet-icon cat-${i.category}`} aria-hidden><ItemIcon item={i} size={30} /></span>
                   <span className="closet-name">{itemName(i)}</span>
-                  <button className="link small" onClick={() => (i.custom ? onRemoveCustom(i.id) : onDisown(i.id))}>
+                  <button className="closet-btn" onClick={() => (i.custom ? onRemoveCustom(i.id) : onDisown(i.id))}>
                     {t(i.custom ? 'wardrobe.delete' : 'wardrobe.dontHave')}
                   </button>
                 </div>
@@ -58,11 +51,11 @@ export function WardrobeView({ items, onDisown, onOwn, onWishlist, onAddCustom, 
           <div className="closet">
             {missing.map((i) => (
               <div key={i.id} className="closet-item off">
-                <span className={`closet-emoji ${i.dark ? 'emoji-dark' : ''}`} aria-hidden>{i.emoji}</span>
+                <span className={`closet-icon cat-${i.category}`} aria-hidden><ItemIcon item={i} size={30} /></span>
                 <span className="closet-name">{itemName(i)}</span>
                 <span className="closet-actions">
-                  {!i.wishlist && <button className="link small" onClick={() => onWishlist(i.id, true)}>+ {t('wardrobe.want')}</button>}
-                  <button className="link small" onClick={() => onOwn(i.id)}>{t('wardrobe.haveIt')}</button>
+                  {!i.wishlist && <button className="closet-btn" onClick={() => onWishlist(i.id, true)}>+ {t('wardrobe.want')}</button>}
+                  <button className="closet-btn" onClick={() => onOwn(i.id)}>{t('wardrobe.haveIt')}</button>
                 </span>
               </div>
             ))}
@@ -70,21 +63,7 @@ export function WardrobeView({ items, onDisown, onOwn, onWishlist, onAddCustom, 
         </section>
       )}
 
-      <section className="card">
-        <h2>{t('wardrobe.addTitle')}</h2>
-        <form onSubmit={add} className="stack">
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('wardrobe.namePh')} aria-label={t('wardrobe.namePh')} />
-          <label className="muted small stack-tight">
-            {t('wardrobe.asType')}
-            <select value={template} onChange={(e) => setTemplate(e.target.value)}>
-              {items.filter((i) => !i.custom).map((i) => (
-                <option key={i.id} value={i.id}>{i.emoji} {catLabel(i.category)} · {itemName(i)}</option>
-              ))}
-            </select>
-          </label>
-          <button type="submit" className="primary">{t('wardrobe.add')}</button>
-        </form>
-      </section>
+      <AddItemForm items={items} title="wardrobe.addTitle" placeholder="wardrobe.namePh" onAdd={onAddCustom} />
 
       <div className="reset">
         {confirmReset ? (
