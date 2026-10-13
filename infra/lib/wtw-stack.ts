@@ -389,6 +389,16 @@ export class WtwStack extends Stack {
         auth: { type: 'CODECONNECTIONS', resource: github.attrConnectionArn },
       },
       sourceVersion: 'main',
+      // push 到 main 就自动部署（要先在控制台授权 wtw-github 连接，webhook 才建得起来）
+      triggers: {
+        webhook: true,
+        filterGroups: [
+          [
+            { type: 'EVENT', pattern: 'PUSH' },
+            { type: 'HEAD_REF', pattern: '^refs/heads/main$' },
+          ],
+        ],
+      },
       artifacts: { type: 'NO_ARTIFACTS' },
       environment: {
         // ARM 小规格：每月前 100 分钟免费

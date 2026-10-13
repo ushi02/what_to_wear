@@ -18,7 +18,7 @@
 8. [踩过的坑](#8-踩过的坑)
 9. [常用命令速查](#9-常用命令速查)
 10. [术语表](#10-术语表)
-11. [下一步：基础设施即代码 + CI/CD](#11-下一步基础设施即代码--cicd)
+11. [第 6 步：基础设施即代码 + CI/CD](#11-第-6-步基础设施即代码--cicd)
 
 ---
 
@@ -56,6 +56,10 @@
 | | 应用客户端 | `wtw-web`（`1jpdh7q27mma1of8afjoh9e7vn`） |
 | | 登录页域名 | `wtw-login.auth.ap-southeast-2.amazoncognito.com` |
 | | JWT 授权器 | `cognito-jwt`（`xqs2zo`） |
+| 管理 | CloudFormation 栈 | `what-to-wear`（上面所有资源都在里面，由 `infra/` 的 CDK 代码管理） |
+| 自动部署 | CodeBuild 项目 | `wtw-deploy`（push 到 main 时触发） |
+| | GitHub 连接 | `wtw-github`（CodeConnections） |
+| | CodeBuild 的 IAM 角色 | `wtw-deploy-codebuild` |
 
 相关代码：
 
@@ -66,7 +70,9 @@
 | `src/lib/auth.ts` | 登录 / 退出 |
 | `src/lib/cloud.ts` | 和云端同步 |
 | `scripts/deploy.sh` | `npm run deploy`：发布前端 |
-| `scripts/deploy-api.sh` | `npm run deploy:api`：更新 Lambda 代码 |
+| `infra/` | CDK 代码：全部 AWS 资源（`npm run deploy:infra` 部署） |
+| `buildspec.yml` | CodeBuild 自动部署的步骤 |
+| `.github/workflows/ci.yml` | GitHub Actions 自动测试的步骤 |
 
 ---
 
@@ -358,7 +364,7 @@ PUT  → 检查：body ≤ 50 KB、是合法 JSON、items 是数组 → PutItem 
 
 **冷启动**：第一次请求花了 476 ms，之后只要 35–75 ms。Lambda 一段时间没被调用时，运行环境会被回收，下次要重新启动，这就是冷启动。
 
-更新后端代码：`npm run deploy:api`（`scripts/deploy-api.sh`：zip → `aws lambda update-function-code`）。
+更新后端代码：当时用 `scripts/deploy-api.sh`（zip → `aws lambda update-function-code`）。第 6 步以后 Lambda 代码由 CDK 管理，改成 `npm run deploy:infra`（或 push 到 main 自动部署），这个脚本删掉了。
 
 ---
 
@@ -589,6 +595,11 @@ API Gateway 会自动检查：**签名对不对、是不是你的用户池签发
 | 7 | 开发模式下同一个 `code` 可能被拿去换两次令牌 | React StrictMode 会故意把 effect 执行两次 | 回调处理放在模块级的 Promise 里，只处理一次 |
 | 8 | 第一次 `npm run deploy` 卡在 `aws s3 sync`，5 分钟没反应 | 单独测试时一切正常，重跑也成功了，判断是偶发的网络问题 | 重跑 |
 | 9 | 调试输出里打印出了本机 AWS 会话的临时令牌 | `aws --debug` 会打印完整请求头 | 运行 `aws logout` + `aws login` 换新会话。以后调试时用 `grep -v` 过滤掉请求头 |
+| 10 | GitHub OIDC 报 "explicit deny in a service control policy" | project 的 SCP 禁止 `iam:*Provider*` | 改用 CodeBuild + CodeConnections（见 11.4） |
+| 11 | AWS 命令时不时卡住，或者报 `CreateOAuth2Token ... INVALID_REQUEST` | 同时跑多个 AWS 命令时，它们抢着刷新 `aws login` 的会话，其中一个就会失败 | AWS 命令一次只跑一个 |
+| 12 | IaC 生成器没扫出 API 阶段、登录页域名和品牌样式 | 扫描不支持这几种资源 | 用 `get-stage`、`describe-user-pool-domain` 等命令查出配置后手写 |
+| 13 | 导入要求每个资源都有 DeletionPolicy | CloudFormation 导入的规定 | 所有资源都设成 `RemovalPolicy.RETAIN` |
+| 14 | 加 webhook 时 `cdk diff` 说项目 "may be replaced" | CloudFormation 的保守提示 | 文档说加触发器不用替换。部署后看创建时间没变，确实没有替换 |
 
 ---
 
@@ -598,11 +609,17 @@ API Gateway 会自动检查：**签名对不对、是不是你的用户池签发
 # 登录 AWS（凭证过期时）
 aws login --profile wtw
 
+# 平时：push 到 main（通过 PR 合并）就会自动部署，下面是手动部署的方法
+
 # 发布前端（测试 → 构建 → 上传 → 刷新 CloudFront）
 npm run deploy
 
-# 更新后端代码
-npm run deploy:api
+# 部署 AWS 资源和 Lambda 代码（先在 infra/ 里 npx cdk diff 看会改什么）
+npm run deploy:infra
+
+# 看最近的自动部署
+aws codebuild list-builds-for-project --project-name wtw-deploy --profile wtw
+aws logs tail /aws/codebuild/wtw-deploy --since 1h --profile wtw
 
 # 看 Lambda 最近的日志
 aws logs tail /aws/lambda/wtw-state --since 1h --profile wtw
@@ -642,31 +659,122 @@ npm run dev
 
 ---
 
-## 11. 下一步：基础设施即代码 + CI/CD
+## 11. 第 6 步：基础设施即代码 + CI/CD
 
-到目前为止，所有资源都是**手动**一个个建的。好处是每一步都看得清楚；坏处是：
+### 11.1 为什么要做这一步
+
+到第 5 步为止，所有资源都是**手动**一个个建的。好处是每一步都看得清楚；坏处是：
 
 - 换个账号重建一遍，要照着这份文档再操作几十步
 - 改了配置没有记录，不知道谁在什么时候改了什么
 - 部署要在自己电脑上运行 `npm run deploy`
 
-第 6 步要解决这两件事：
+第 6 步分两半：**① 用 CDK 把资源写成代码**；**② push 代码就自动测试、自动部署（CI/CD）**。
 
-**① 基础设施即代码（IaC）：AWS CDK**
+### 11.2 概念
 
-用 TypeScript 写出"我要一张什么样的表、一个什么样的 Lambda"，CDK 会把它翻译成 CloudFormation 模板，由 AWS 负责创建和更新。好处是：
-
-- 一条命令就能重建整套资源
-- 配置写在代码里，改动可以在 git 里看到前后差别、可以审查
-- 改之前可以先用 `cdk diff` 预览会发生什么
-
-难点：现有的 DynamoDB 表和 Cognito 用户池里**已经有数据**，不能删掉重建。要用 CDK 的**导入（import）**功能把它们"接管"过来。
-
-**② CI/CD：GitHub Actions**
-
-- **CI（持续集成）**：每次 push，自动跑测试、lint 和构建，尽早发现问题
+- **基础设施即代码（IaC）**：用代码描述"我要一张什么样的表、一个什么样的 Lambda"，由工具负责创建和更新
+- **CloudFormation**：AWS 原生的 IaC 服务。你交给它一份模板（JSON/YAML），它负责把资源建成模板里的样子。一组一起管理的资源叫一个**栈（stack）**
+- **CDK**：用 TypeScript 等编程语言写 CloudFormation 模板的工具。`cdk synth` 把代码翻译成模板，`cdk deploy` 交给 CloudFormation 执行
+- **逻辑 ID**：资源在模板里的名字（比如 `UsersTable`）。CloudFormation 靠它认出"这是同一个资源"。**改了逻辑 ID，CloudFormation 会以为是新资源，删掉旧的、再建新的**
+- **L1 和 L2**：CDK 的两种写法。L1（`Cfn*` 类）和 CloudFormation 一一对应，写什么就是什么；L2（如 `dynamodb.Table`）更简短，但会悄悄加默认设置和额外资源
+- **CI（持续集成）**：每次 push 自动跑 lint、测试、构建，尽早发现问题
 - **CD（持续部署）**：测试通过后自动发布上线
 
-GitHub Actions 是 GitHub 自带的 CI/CD 平台。在仓库里放一个 `.github/workflows/*.yml` 文件，写明"什么时候触发、在什么环境里、按什么顺序执行哪些命令"。
+### 11.3 CDK 接管现有资源（import）
 
-**GitHub 怎么获得 AWS 权限？** 不把访问密钥存进 GitHub，而是用 **OIDC 联合身份**：在 AWS 里建一个 IAM 角色，信任策略写明"只信任 GitHub 上 `ushi02/what_to_wear` 这个仓库的 `main` 分支"。每次部署时，GitHub 拿一个临时身份证明去 AWS 换临时凭证，用完就过期。整个过程没有任何长期密钥。
+难点在于：表和用户池里**已经有数据**，不能删掉重建。所以要用 **`cdk import`** 把现有资源"登记"到栈里，而不是新建。
+
+**① 扫描出真实配置**：用 CloudFormation 的 **IaC 生成器**扫描账号里的资源，生成一份带真实设置的模板。比照着它写 CDK 代码，比凭记忆手写可靠得多。扫描漏了 3 个资源（API 的 `$default` 阶段、登录页域名、品牌样式），这几个用 `aws ... get/describe` 查出配置后手写。
+
+**② 用 L1 写出一模一样的代码**：`infra/lib/wtw-stack.ts`，共 19 个资源。选 L1 是因为导入时属性要对得上；L2 加的默认设置很容易对不上。
+
+**③ 每个资源都设成"保留"（`RemovalPolicy.RETAIN`）**：CloudFormation 要求被导入的资源必须有删除策略。设成"保留"也最安全：就算以后从代码里删掉某个资源，CloudFormation 也只是不再管它，不会真的删除。再加上栈的**防止删除**（termination protection）和表、用户池本身的删除保护，用户数据有三层保护。
+
+**④ `cdk bootstrap`**：每个账号和区域做一次。CDK 会建一个叫 `CDKToolkit` 的栈，里面有存代码包的 S3 桶、ECR 仓库和几个 IAM 角色（CloudFormation 用它们替你部署）。
+
+**⑤ `cdk import --resource-mapping`**：写一个对照表，告诉 CloudFormation "模板里的 `UsersTable` 就是现有的 `wtw-users` 表"，然后执行导入。导入只登记资源，不创建、不修改、不删除。（对照表含账号 ID，用完就删了，没有提交。）
+
+**⑥ 检查**：
+
+| 检查 | 结果 |
+|---|---|
+| 漂移检测（drift，代码和实际资源的差别） | 只有 3 处标签不同（手动建的桶、分发、API 阶段没加 `app` 标签），其他设置完全一致 |
+| `cdk diff` | 没有任何资源要新建、修改或替换 |
+| 第一次 `cdk deploy` 的输出 | 网址、API 地址、client ID 都和原来一模一样，说明没有重建任何东西 |
+| 网站和 API | 网站 200；不带令牌访问 API 返回 401，照常工作 |
+
+以后改 AWS 配置的方法：改 `infra/lib/wtw-stack.ts` → `cd infra && npx cdk diff` 看会改什么 → `npm run deploy:infra`。
+
+> ⚠️ **不要改 construct 的 id**（`new CfnXxx(this, '这里', ...)`），它就是逻辑 ID。
+
+### 11.4 原计划行不通：SCP 禁止 OIDC
+
+原计划是让 GitHub Actions 用 **OIDC 联合身份**直接部署：在 AWS 里登记 GitHub 为可信的身份提供商，GitHub 每次部署时拿临时身份证明去 AWS 换临时凭证，全程没有长期密钥。
+
+实际查询时报错：**explicit deny in a service control policy**。查了 [AWS 的文档](https://docs.aws.amazon.com/accounts/latest/reference/scps-and-rcps-for-projects.html)，新体验的 project 在 Free 和 Paid 套餐下都有一条 `DenyIAMRestrictedActions`，禁止所有带 `Provider` 的 IAM 操作（`iam:*Provider*`）。所以没法登记 GitHub 这个身份提供商。
+
+> **SCP（服务控制策略）**是组织层面的"天花板"：就算你的角色有管理员权限，SCP 拒绝的操作也做不了。新体验的 project 由 AWS 托管 SCP，自己改不了。
+
+可选的方案：
+
+| 方案 | 优点 | 缺点 |
+|---|---|---|
+| **GitHub 跑测试 + AWS CodeBuild 部署**（选了这个） | GitHub 里不放任何 AWS 密钥；AWS 只能访问授权的那一个仓库 | 要在控制台授权一次 GitHub 连接；用到两个平台 |
+| GitHub Actions + IAM 用户的访问密钥 | 最常见、最简单 | 长期有效的密钥存在 GitHub 里，仓库又是公开的，泄露风险大 |
+| 只做 CI，部署照旧在本机运行 | 最简单 | 不是真正的自动部署 |
+
+### 11.5 最终的 CI/CD 流程
+
+```
+你 push 代码到 GitHub
+   │
+   ├─▶ GitHub Actions（CI，.github/workflows/ci.yml）
+   │     lint → 测试 → 构建 → tsc + cdk synth（只生成模板，不连 AWS）
+   │     所有分支、所有 PR 都会跑
+   │
+   └─▶ 只有 main 分支：GitHub webhook 通知 AWS CodeBuild（CD，buildspec.yml）
+         CodeBuild 通过 CodeConnections 从 GitHub 拉代码
+         → cdk deploy（基础设施和 Lambda 代码）
+         → scripts/deploy.sh（测试、构建、上传网页、刷新 CloudFront）
+```
+
+**新增的 AWS 资源**（都写在 `infra/lib/wtw-stack.ts` 里）：
+
+| 资源 | 名称 | 说明 |
+|---|---|---|
+| CodeConnections 连接 | `wtw-github` | AWS 访问 GitHub 的通道（本质是装在 GitHub 上的 "AWS Connector for GitHub" 应用）。建好时是 PENDING，要在控制台授权一次，只授权 `ushi02/what_to_wear` 这一个仓库 |
+| CodeBuild 项目 | `wtw-deploy` | 跑部署的机器。ARM 小规格（每月前 100 分钟免费），超时 20 分钟，同一时间只跑一个部署 |
+| webhook | 在 GitHub 仓库里 | 只在 push 到 `main` 时触发 |
+| IAM 角色 | `wtw-deploy-codebuild` | CodeBuild 的权限，见下 |
+| 日志组 | `/aws/codebuild/wtw-deploy` | 部署日志，保留 14 天 |
+
+**CodeBuild 角色的权限**（最小权限）：
+
+| 权限 | 用途 |
+|---|---|
+| 写自己的日志组 | 记录部署过程 |
+| 使用 `wtw-github` 连接 | 从 GitHub 拉代码 |
+| `sts:AssumeRole` 到 CDK bootstrap 的 3 个角色 | `cdk deploy` 不直接拿权限，而是借用 bootstrap 建的角色去上传代码包、执行 CloudFormation |
+| 网站桶的读、写、删、列出 | 上传网页 |
+| `cloudfront:CreateInvalidation`（只限这个分发） | 刷新缓存 |
+
+### 11.6 不把账号 ID 放进公开仓库
+
+仓库是公开的。AWS 账号 ID 不算机密，但没必要公开，所以：
+
+- `infra/bin/app.ts`：账号取当前登录凭证所在的账号（`CDK_DEFAULT_ACCOUNT`）。没有凭证时（比如 GitHub Actions 里只做 synth），就生成不绑定账号的模板
+- `scripts/deploy.sh`：桶名和分发 ID 从 CloudFormation 栈的输出里读取，不写死
+- 文档里写成 `<账号ID>`
+- 推送前**改写了还没推送的 23 个提交**，把历史里的账号 ID 也替换掉了（只改写没推送过的提交是安全的；已经推送的历史不要改写）
+
+Cognito 用户池 ID、client ID、API 地址、CloudFront 域名留在代码里：它们本来就会出现在浏览器里，公开也没关系，安全靠的是令牌验证。
+
+### 11.7 Git 流程
+
+1. 在 `dev` 分支开发、提交
+2. `git push origin dev`
+3. 开 PR：`dev` → `main`，GitHub Actions 自动跑 CI
+4. CI 通过后合并 → push 到 `main` → CodeBuild 自动部署
+
+GitHub 的 `main` 分支就是"线上版本"。

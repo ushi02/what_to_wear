@@ -177,7 +177,7 @@ AWS 里任何东西想访问别的东西，都要有明确授权，这套机制�
 | **AWS CDK** / **SAM** | 用代码描述所有资源，一条命令部署；CDK 可以用 TypeScript 写，和本项目同一种语言 |
 | **Terraform** | 跨云通用，以后学 GCP 也能用 |
 
-建议先手动搭一遍，理解之后用 CDK 写成代码，最后用 GitHub Actions 做到 push 就自动部署。AWS 凭证用 OIDC 方式授权，**不要把访问密钥存进 GitHub**。
+建议先手动搭一遍，理解之后用 CDK 写成代码，最后做到 push 就自动部署，**不要把访问密钥存进 GitHub**。（本项目的 SCP 禁止 GitHub OIDC，实际用的是 GitHub Actions 跑测试 + AWS CodeBuild 部署，见 `aws-walkthrough.md` 第 11 节。）
 
 ## 9. 费用
 
@@ -262,7 +262,7 @@ AWS 里任何东西想访问别的东西，都要有明确授权，这套机制�
 3. **后端**：建 DynamoDB 表，写 Lambda，挂到 API Gateway 上。先不加登录，用 `curl` 测通读写。
 4. **登录**：加 Cognito，给 API Gateway 配置 JWT 验证。
 5. **前端接入**：加登录按钮，接入同步逻辑。
-6. **自动化**：用 CDK 把整套资源写成代码，配置 GitHub Actions 自动部署。
+6. **自动化**：用 CDK 把整套资源写成代码，配置自动测试和自动部署。
 
 前两步一个晚上就能做完。第 3、4 步是核心，大部分 AWS 概念都会在这里碰到。
 
@@ -293,7 +293,7 @@ AWS 里任何东西想访问别的东西，都要有明确授权，这套机制�
 | 日志组 | `/aws/lambda/wtw-state` | 保留 14 天 |
 | HTTP API | `wtw-api`（`3vq36jfo5i`） | 路由 `GET /state`、`PUT /state`；限流 10 次/秒，突发 20；CORS 只允许正式网址和 `localhost:5173` |
 
-更新后端代码：`npm run deploy:api`（见 `scripts/deploy-api.sh`）。
+更新后端代码：第 6 步以后由 CDK 管理，`npm run deploy:infra`，或 push 到 main 自动部署。
 
 > 第 3 步时 Lambda 用临时环境变量 `ALLOW_TEST_USER=1` 让没有令牌的请求都当作 `test-user`，第 4 步已删除。
 
