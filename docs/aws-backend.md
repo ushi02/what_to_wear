@@ -310,3 +310,12 @@ AWS 里任何东西想访问别的东西，都要有明确授权，这套机制�
 - 前端调用接口时带 `Authorization: Bearer <access token>`。ID token 的 `aud` 也是同一个 client ID，所以也能通过，但约定用 access token。
 - **刷新令牌轮换没开**：开了以后 Cognito 不再接受 `ALLOW_REFRESH_TOKEN_AUTH`，很多前端库刷新令牌用的正是它。等第 5 步确认前端库支持后再开。
 - Cognito 自带的发信功能每天最多 50 封（验证码、找回密码都算）。用户多了要换成 SES。
+
+### 前端接入（第 5 步，2026-10-13）
+
+- 登录库：`oidc-client-ts`（`src/lib/auth.ts`），走授权码 + PKCE；令牌存 localStorage，30 天内不用重新登录，access token 快过期时用 refresh token 自动续期。
+- 同步（`src/lib/cloud.ts`）：
+  - 登录后先拉云端：云端为空 → 上传本地（首次登录迁移）；本地数据上次同步的是别的账号 → 用云端的；否则比较本地最后修改时间（`wtw:v1:changedAt`）和云端 `updatedAt`，谁晚用谁的。
+  - 之后每次修改停 1.5 秒上传；页面隐藏时用 `keepalive` 立刻补传；退出登录前先补传，再作废 refresh token。
+- 已知局限：比较新旧时，本地时间来自设备时钟，云端时间来自服务器时钟，时钟偏差很大时可能判断错。另外，两台设备同时离线修改，后同步的一方会覆盖先同步的（最后写入者胜）。
+- AWS 地址和 ID 统一放在 `src/config.ts`。
