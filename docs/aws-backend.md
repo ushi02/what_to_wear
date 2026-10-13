@@ -295,4 +295,18 @@ AWS 里任何东西想访问别的东西，都要有明确授权，这套机制�
 
 更新后端代码：`npm run deploy:api`（见 `scripts/deploy-api.sh`）。
 
-> **临时开关**：Lambda 环境变量 `ALLOW_TEST_USER=1` 让没有令牌的请求都当作 `test-user`，方便用 `curl` 测试。第 4 步接上 Cognito 后要删掉这个变量，否则谁都能读写 `test-user`。
+> 第 3 步时 Lambda 用临时环境变量 `ALLOW_TEST_USER=1` 让没有令牌的请求都当作 `test-user`，第 4 步已删除。
+
+### 登录（第 4 步，2026-10-13）
+
+| 资源 | 名称 / ID | 说明 |
+|---|---|---|
+| 用户池 | `wtw-users`（`ap-southeast-2_ggK9a6xv4`） | Essentials 档；邮箱登录并验证；密码至少 8 位含大小写和数字；可选 TOTP 两步验证；删除保护 |
+| 应用客户端 | `wtw-web`（`1jpdh7q27mma1of8afjoh9e7vn`） | 公共客户端，没有 secret；只允许授权码 + PKCE；scope `openid email`；access/ID token 1 小时，refresh token 30 天；开启令牌吊销 |
+| 登录页 | `https://wtw-login.auth.ap-southeast-2.amazoncognito.com` | 新版托管登录页（managed login v2），默认品牌样式 |
+| 回调 / 退出地址 | `https://dxms6lt12il94.cloudfront.net/`、`http://localhost:5173/` | 必须和前端传的 `redirect_uri` 完全一致，包括结尾的 `/` |
+| JWT 授权器 | `cognito-jwt`（`xqs2zo`） | 挂在 `GET`、`PUT /state` 上；签发者是上面的用户池，audience 是 `wtw-web` 的 client ID |
+
+- 前端调用接口时带 `Authorization: Bearer <access token>`。ID token 的 `aud` 也是同一个 client ID，所以也能通过，但约定用 access token。
+- **刷新令牌轮换没开**：开了以后 Cognito 不再接受 `ALLOW_REFRESH_TOKEN_AUTH`，很多前端库刷新令牌用的正是它。等第 5 步确认前端库支持后再开。
+- Cognito 自带的发信功能每天最多 50 封（验证码、找回密码都算）。用户多了要换成 SES。
