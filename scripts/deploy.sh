@@ -11,9 +11,9 @@ cd "$(dirname "$0")/.."
 npm test
 npm run build
 
-# assets/ 的文件名带内容哈希，可以让浏览器缓存一年
+# assets/ 的文件名带内容哈希，可以让浏览器缓存一年；名字一样内容就一样，只比大小不比时间
 aws s3 sync dist/assets "s3://$BUCKET/assets" \
-  --cache-control "public, max-age=31536000, immutable" --delete
+  --cache-control "public, max-age=31536000, immutable" --size-only --delete
 
 # index.html 等入口文件每次都要检查有没有新版本
 aws s3 sync dist "s3://$BUCKET" --exclude "assets/*" \
