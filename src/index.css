@@ -150,7 +150,13 @@ input, select {
 }
 /* 中文没有 Bricolage 的字形，用系统粗体，字距放开一点 */
 :root[lang^='zh'] .brand-label { font-family: 'PingFang SC', 'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif; font-weight: 700; letter-spacing: 0.02em; }
-.settings { display: flex; gap: 8px; }
+.settings { display: flex; flex-wrap: wrap; gap: 8px; }
+/* 已同步是缝线色，同步中闪一下，失败是警告色 */
+.account { align-items: center; }
+.sync-dot { width: 7px; height: 7px; margin: 0 4px 0 7px; border-radius: 50%; background: var(--muted); }
+.sync-dot.synced { background: var(--stitch); }
+.sync-dot.syncing { animation: twinkle 1s ease-in-out infinite; }
+.sync-dot.error { background: var(--warn); }
 
 .tabs { display: flex; gap: 6px; margin-bottom: 14px; overflow-x: auto; }
 .tabs button { white-space: nowrap; color: var(--muted); font-weight: 550; font-size: var(--fs-md); padding: 8px 14px; border-radius: 999px; }
@@ -258,7 +264,7 @@ input, select {
 @keyframes snow { 0% { transform: translate(0, 0); } 50% { transform: translate(14px, 260px); } 100% { transform: translate(-6px, 520px); } }
 
 @media (prefers-reduced-motion: reduce) {
-  .scene * { animation: none !important; }
+  .scene *, .sync-dot { animation: none !important; }
   .drop, .flake { display: none; }
 }
 

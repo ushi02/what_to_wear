@@ -5,6 +5,8 @@ import { TodayView } from './components/TodayView'
 import { WardrobeView } from './components/WardrobeView'
 import { WishlistView } from './components/WishlistView'
 import { I18nContext, LANGS, makeI18n } from './i18n'
+import { signIn, signOut, useAuth } from './lib/auth'
+import { useCloudSync } from './lib/cloud'
 import { useAppState, type Theme } from './lib/storage'
 
 type Tab = 'today' | 'wardrobe' | 'wishlist'
@@ -12,6 +14,8 @@ type Tab = 'today' | 'wardrobe' | 'wishlist'
 export default function App() {
   const app = useAppState()
   const { items, place, lang, unit, theme } = app.state
+  const auth = useAuth()
+  const sync = useCloudSync(auth.session, app.state, app.replaceState)
   const i18n = useMemo(() => makeI18n(lang, unit), [lang, unit])
   const { t } = i18n
   const [tab, setTab] = useState<Tab>('today')
@@ -70,6 +74,26 @@ export default function App() {
                 </button>
               ))}
             </div>
+            {auth.ready &&
+              (auth.session ? (
+                <div className="seg small account" role="group" aria-label="Account">
+                  <span className={`sync-dot ${sync.status}`} role="status" title={t(`sync.${sync.status}`)} aria-label={t(`sync.${sync.status}`)} />
+                  <button
+                    title={auth.session.email}
+                    onClick={async () => {
+                      // 退出会作废令牌，先把还没传的改动发出去
+                      await sync.flush().catch(() => {})
+                      await signOut()
+                    }}
+                  >
+                    {t('account.signOut')}
+                  </button>
+                </div>
+              ) : (
+                <div className="seg small" role="group" aria-label="Account">
+                  <button onClick={() => signIn()}>{t('account.signIn')}</button>
+                </div>
+              ))}
           </div>
         </header>
 
