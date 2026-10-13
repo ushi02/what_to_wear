@@ -138,7 +138,7 @@ export function TodayView({ place, items, onChangePlace, onWishlist }: Props) {
         </section>
 
         <section className="section">
-          <h2>{t('outfit.title')}</h2>
+          <h2>{t(dayPos === 0 ? 'outfit.title' : 'outfit.titleTomorrow')}</h2>
           <div className="outfit">
             {rec.picks.map((p) => (
               <article key={p.category} className={`tile ${p.item ? '' : 'empty'}`}>
