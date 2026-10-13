@@ -38,6 +38,7 @@ const en = {
   'sync.syncing': 'Syncing…',
   'sync.synced': 'Synced to your account',
   'sync.error': "Couldn't sync right now",
+  'footer.source': 'Source on GitHub',
 
   'wx.loading': 'Checking the weather…',
   'wx.error': 'Weather service unavailable ({status})',
@@ -194,6 +195,7 @@ const zh: Dict = {
   'sync.syncing': '同步中…',
   'sync.synced': '已同步到你的账号',
   'sync.error': '暂时同步不上',
+  'footer.source': 'GitHub 源代码',
 
   'wx.loading': '正在查天气…',
   'wx.error': '天气服务暂时不可用（{status}）',

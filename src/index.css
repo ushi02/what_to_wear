@@ -391,6 +391,9 @@ input, select {
 .row-icon { width: 42px; height: 42px; }
 .row-main { flex: 1; min-width: 0; }
 .footnote { color: var(--muted); font-size: 0.78rem; margin: 18px 4px 0; line-height: 1.6; }
+.site-footer { margin-top: 32px; text-align: center; font-size: 0.8rem; }
+.site-footer a { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); text-decoration: none; }
+.site-footer a:hover { color: var(--text); }
 
 /* ---------- wardrobe ---------- */
 .intro { color: var(--muted); font-size: 0.92rem; margin: 2px 4px 0; }

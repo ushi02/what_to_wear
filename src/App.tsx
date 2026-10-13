@@ -1,4 +1,4 @@
-import { CircleHalf, Moon, Sun } from '@phosphor-icons/react'
+import { CircleHalf, GithubLogo, Moon, Sun } from '@phosphor-icons/react'
 import { useEffect, useMemo, useState } from 'react'
 import { CityPicker } from './components/CityPicker'
 import { TodayView } from './components/TodayView'
@@ -140,6 +140,13 @@ export default function App() {
             />
           )}
         </main>
+
+        <footer className="site-footer">
+          <a href="https://github.com/ushi02/what_to_wear" target="_blank" rel="noreferrer">
+            <GithubLogo size={15} />
+            {t('footer.source')}
+          </a>
+        </footer>
       </div>
     </I18nContext.Provider>
   )
