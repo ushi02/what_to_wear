@@ -7,8 +7,13 @@ set -euo pipefail
 if [ -z "${CODEBUILD_BUILD_ID:-}" ]; then
   export AWS_PROFILE=wtw
 fi
-BUCKET=wtw-site-<账号ID>
-DISTRIBUTION=EORJPY4T2JXFT
+# 桶名和分发 ID 从 CDK 栈的输出里读，不写死在代码里
+output() {
+  aws cloudformation describe-stacks --stack-name what-to-wear --region ap-southeast-2 \
+    --query "Stacks[0].Outputs[?OutputKey=='$1'].OutputValue" --output text
+}
+BUCKET=$(output SiteBucketName)
+DISTRIBUTION=$(output DistributionId)
 
 cd "$(dirname "$0")/.."
 npm test
