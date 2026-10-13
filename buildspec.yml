@@ -1,0 +1,18 @@
+# CodeBuild 项目 wtw-deploy 的构建步骤（项目本身定义在 infra/lib/wtw-stack.ts）
+# push 到 main 后：装依赖 → 部署 AWS 资源（CDK）→ 测试、构建并发布网页
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 22
+    commands:
+      - npm ci
+      - npm ci --prefix infra
+
+  build:
+    commands:
+      # 先部署后端和基础设施：Lambda 代码、API、Cognito 等的改动都在这一步生效
+      - cd infra && npx cdk deploy --require-approval never --ci && cd ..
+      # 再发布网页：跑测试、构建、上传到 S3、刷新 CloudFront
+      - bash scripts/deploy.sh

@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "deploy": "bash scripts/deploy.sh",
-    "deploy:api": "bash scripts/deploy-api.sh"
+    "deploy:infra": "cd infra && AWS_PROFILE=wtw npx cdk deploy"
   },
   "dependencies": {
     "@fontsource-variable/bricolage-grotesque": "^5.3.0",

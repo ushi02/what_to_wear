@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 # 构建并发布到 S3 + CloudFront（https://dxms6lt12il94.cloudfront.net）
-# 凭证过期时先运行：aws login --profile wtw
+# 本机运行时用 wtw 的登录凭证（过期了先 aws login --profile wtw）；
+# CodeBuild 里运行时用项目角色 wtw-deploy-codebuild 自带的凭证
 set -euo pipefail
 
-export AWS_PROFILE=wtw
+if [ -z "${CODEBUILD_BUILD_ID:-}" ]; then
+  export AWS_PROFILE=wtw
+fi
 BUCKET=wtw-site-<账号ID>
 DISTRIBUTION=EORJPY4T2JXFT
 

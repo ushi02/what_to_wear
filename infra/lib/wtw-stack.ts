@@ -9,6 +9,8 @@
 import { Aws, CfnOutput, CfnResource, RemovalPolicy, Stack, Tags, type StackProps } from 'aws-cdk-lib'
 import * as apigw from 'aws-cdk-lib/aws-apigatewayv2'
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront'
+import * as codebuild from 'aws-cdk-lib/aws-codebuild'
+import * as codeconnections from 'aws-cdk-lib/aws-codeconnections'
 import * as cognito from 'aws-cdk-lib/aws-cognito'
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb'
 import * as iam from 'aws-cdk-lib/aws-iam'
@@ -300,6 +302,107 @@ export class WtwStack extends Stack {
       principal: 'apigateway.amazonaws.com',
       sourceArn: `arn:aws:execute-api:${Aws.REGION}:${Aws.ACCOUNT_ID}:${api.ref}/*/*/state`,
     })
+
+    // ───────────── 自动部署：CodeConnections + CodeBuild ─────────────
+    //
+    // 这个 project 的 SCP 禁止 iam:*Provider*，所以没法让 GitHub Actions 用 OIDC 拿 AWS 凭证。
+    // 改成反过来：AWS 通过 CodeConnections（GitHub App）去 GitHub 拉代码，GitHub 里不放任何 AWS 密钥。
+    // 测试由 GitHub Actions 跑（.github/workflows/ci.yml），部署由 CodeBuild 跑（buildspec.yml）。
+
+    // 建好后状态是 PENDING，要在控制台点一次"更新待处理连接"授权 GitHub 才能用
+    const github = new codeconnections.CfnConnection(this, 'GitHubConnection', {
+      connectionName: 'wtw-github',
+      providerType: 'GitHub',
+    })
+
+    const buildLogGroup = new logs.CfnLogGroup(this, 'DeployLogGroup', {
+      logGroupName: '/aws/codebuild/wtw-deploy',
+      retentionInDays: 14,
+    })
+
+    const bootstrapRole = (kind: string) => `arn:aws:iam::${Aws.ACCOUNT_ID}:role/cdk-hnb659fds-${kind}-role-${Aws.ACCOUNT_ID}-${Aws.REGION}`
+    const deployRole = new iam.CfnRole(this, 'DeployRole', {
+      roleName: 'wtw-deploy-codebuild',
+      description: 'CodeBuild role that deploys what_to_wear',
+      assumeRolePolicyDocument: {
+        Version: '2012-10-17',
+        Statement: [
+          {
+            Effect: 'Allow',
+            Principal: { Service: 'codebuild.amazonaws.com' },
+            Action: 'sts:AssumeRole',
+            Condition: { StringEquals: { 'aws:SourceAccount': Aws.ACCOUNT_ID } },
+          },
+        ],
+      },
+      policies: [
+        {
+          policyName: 'wtw-deploy',
+          policyDocument: {
+            Version: '2012-10-17',
+            Statement: [
+              {
+                Sid: 'WriteBuildLogs',
+                Effect: 'Allow',
+                Action: ['logs:CreateLogStream', 'logs:PutLogEvents'],
+                Resource: `arn:aws:logs:${Aws.REGION}:${Aws.ACCOUNT_ID}:log-group:${buildLogGroup.logGroupName}:*`,
+              },
+              {
+                Sid: 'PullFromGitHub',
+                Effect: 'Allow',
+                Action: ['codeconnections:GetConnection', 'codeconnections:GetConnectionToken', 'codeconnections:UseConnection'],
+                Resource: github.attrConnectionArn,
+              },
+              {
+                // cdk deploy 不直接拿权限，而是借用 bootstrap 建的几个角色去上传资源、执行 CloudFormation
+                Sid: 'UseCdkBootstrapRoles',
+                Effect: 'Allow',
+                Action: 'sts:AssumeRole',
+                Resource: ['deploy', 'file-publishing', 'lookup'].map(bootstrapRole),
+              },
+              {
+                Sid: 'PublishSite',
+                Effect: 'Allow',
+                Action: ['s3:ListBucket', 's3:GetObject', 's3:PutObject', 's3:DeleteObject'],
+                Resource: [siteBucket.attrArn, `${siteBucket.attrArn}/*`],
+              },
+              {
+                Sid: 'InvalidateSiteCache',
+                Effect: 'Allow',
+                Action: 'cloudfront:CreateInvalidation',
+                Resource: `arn:aws:cloudfront::${Aws.ACCOUNT_ID}:distribution/${distribution.ref}`,
+              },
+            ],
+          },
+        },
+      ],
+    })
+
+    const project = new codebuild.CfnProject(this, 'DeployProject', {
+      name: 'wtw-deploy',
+      description: 'Test, deploy the CDK stack and publish the site',
+      serviceRole: deployRole.attrArn,
+      source: {
+        type: 'GITHUB',
+        location: 'https://github.com/ushi02/what_to_wear.git',
+        buildSpec: 'buildspec.yml',
+        auth: { type: 'CODECONNECTIONS', resource: github.attrConnectionArn },
+      },
+      sourceVersion: 'main',
+      artifacts: { type: 'NO_ARTIFACTS' },
+      environment: {
+        // ARM 小规格：每月前 100 分钟免费
+        type: 'ARM_CONTAINER',
+        computeType: 'BUILD_GENERAL1_SMALL',
+        image: 'aws/codebuild/amazonlinux-aarch64-standard:3.0',
+      },
+      logsConfig: { cloudWatchLogs: { status: 'ENABLED', groupName: buildLogGroup.logGroupName } },
+      timeoutInMinutes: 20,
+      // 同一时间只跑一个部署，免得两次 push 的部署互相打架
+      concurrentBuildLimit: 1,
+    })
+    // 日志组按名字引用，CloudFormation 看不出依赖，手动声明：先建日志组
+    project.node.addDependency(buildLogGroup)
 
     // ───────────── 输出（前端 src/config.ts 用到的值） ─────────────
 
