@@ -361,6 +361,13 @@ export class WtwStack extends Stack {
                 Resource: ['deploy', 'file-publishing', 'lookup'].map(bootstrapRole),
               },
               {
+                // deploy.sh 从栈的输出里读桶名和分发 ID
+                Sid: 'ReadStackOutputs',
+                Effect: 'Allow',
+                Action: 'cloudformation:DescribeStacks',
+                Resource: this.stackId,
+              },
+              {
                 Sid: 'PublishSite',
                 Effect: 'Allow',
                 Action: ['s3:ListBucket', 's3:GetObject', 's3:PutObject', 's3:DeleteObject'],

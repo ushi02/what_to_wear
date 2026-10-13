@@ -600,6 +600,7 @@ API Gateway 会自动检查：**签名对不对、是不是你的用户池签发
 | 12 | IaC 生成器没扫出 API 阶段、登录页域名和品牌样式 | 扫描不支持这几种资源 | 用 `get-stage`、`describe-user-pool-domain` 等命令查出配置后手写 |
 | 13 | 导入要求每个资源都有 DeletionPolicy | CloudFormation 导入的规定 | 所有资源都设成 `RemovalPolicy.RETAIN` |
 | 14 | 加 webhook 时 `cdk diff` 说项目 "may be replaced" | CloudFormation 的保守提示 | 文档说加触发器不用替换。部署后看创建时间没变，确实没有替换 |
+| 15 | 第一次自动部署在 `deploy.sh` 报 AccessDenied（DescribeStacks） | 为了不写死账号 ID，脚本改成从栈的输出读桶名，但忘了给 CodeBuild 角色这个权限 | 角色加上只针对 `what-to-wear` 栈的 `cloudformation:DescribeStacks` |
 
 ---
 
@@ -756,6 +757,7 @@ npm run dev
 | 写自己的日志组 | 记录部署过程 |
 | 使用 `wtw-github` 连接 | 从 GitHub 拉代码 |
 | `sts:AssumeRole` 到 CDK bootstrap 的 3 个角色 | `cdk deploy` 不直接拿权限，而是借用 bootstrap 建的角色去上传代码包、执行 CloudFormation |
+| `cloudformation:DescribeStacks`（只限 `what-to-wear` 栈） | 从栈的输出里读桶名和分发 ID |
 | 网站桶的读、写、删、列出 | 上传网页 |
 | `cloudfront:CreateInvalidation`（只限这个分发） | 刷新缓存 |
 
