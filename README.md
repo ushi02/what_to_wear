@@ -1,41 +1,46 @@
-# 出门穿什么
+# What to Wear
 
-出门前看一眼：根据当天天气推荐穿搭，只推荐你衣橱里有的东西。
+A quick look before you head out: it checks the weather and suggests an outfit from clothes you actually own.
 
-- 天气：[Open-Meteo](https://open-meteo.com/)（免费、无需 key，**仅限非商业使用**），全球城市
-- 语言：中文 / English，默认英文，页面上可切换；°C / °F 可切换
-- 数据：衣橱、待购清单、城市、语言设置存在浏览器 localStorage，不登录也能用；登录后同步到云端，换设备也在
-- 网址：https://dxms6lt12il94.cloudfront.net（AWS 悉尼：S3 + CloudFront、Cognito、API Gateway + Lambda + DynamoDB）
+**Live:** https://dxms6lt12il94.cloudfront.net
 
-## 开发
+## How to use it
+
+1. **Pick a city.** Search for one, or tap **Use my location**.
+2. **Read the Today tab.**
+   - The weather card shows how it feels, the chance of rain, wind and UV, an hourly feels-like curve, and how much warmer or colder it is than the day before.
+   - **Wear this today** lists one item per category (top, mid layer, outerwear, bottoms, shoes) plus anything to **bring**, like an umbrella.
+   - **Tips** adds advice for the day, such as layering when the temperature swings.
+   - Switch to **Tomorrow** to plan ahead. After 8 pm the app opens on tomorrow.
+3. **Make the wardrobe yours.** It starts with a basic unisex wardrobe. In the **Wardrobe** tab:
+   - Tap **Don't have** on anything you don't own, and it won't be suggested again.
+   - Add your own items and pick which type each one behaves like.
+4. **Keep a wishlist.** Items that would help show up under **Worth buying**. Add them to your **Wishlist** in one tap, then tap **Got it** once you buy one and it moves into your wardrobe.
+5. **Settings** sit in the top bar: language (中文 / English), °C / °F, and light / dark / system theme.
+
+### Signing in
+
+You don't need an account. Everything you set up is saved in your browser.
+
+Tap **Sign in to sync** to create an account with your email. Once you're signed in, your wardrobe, wishlist, city and settings are also saved to your account, so you get them back on another device or after clearing your browser. A dot next to **Sign out** shows the sync state.
+
+| | Not signed in | Signed in |
+|---|---|---|
+| Weather and outfit suggestions | ✅ | ✅ |
+| Wardrobe, wishlist, city and settings remembered | ✅ in this browser only | ✅ in this browser and in your account |
+| Same data on your phone and computer | ❌ | ✅ |
+| Kept after clearing site data or in a private window | ❌ | ✅ after you sign in again |
+
+## Credits
+
+Weather and geocoding by [Open-Meteo](https://open-meteo.com/), free for non-commercial use.
+
+## Development
 
 ```bash
 npm install
-npm run dev     # 本地开发
-npm test        # 推荐规则、i18n、城市搜索单测
-npm run build   # 产物在 dist/
+npm run dev     # local dev server on http://localhost:5173
+npm test
 ```
 
-## 部署
-
-push 到 `main`（通过 PR 合并）后自动部署：GitHub Actions 跑测试，AWS CodeBuild 按 `buildspec.yml` 部署。手动部署：
-
-```bash
-aws login --profile wtw
-npm run deploy:infra   # AWS 资源和 Lambda 代码（CDK，代码在 infra/）
-npm run deploy         # 网页
-```
-
-搭建过程和每一步的原因见 [`docs/aws-walkthrough.md`](docs/aws-walkthrough.md)。
-
-## 代码结构
-
-- `src/data/baseWardrobe.ts` — unisex 基础衣橱，每件衣服的适用体感温度、防雨等级等
-- `src/data/cities.ts` — 内置约 100 个热门城市的中英文名称（日文名只用于搜索）（Open-Meteo 对中日文别名收录不全）
-- `src/i18n/messages.ts` — 中英文案；新增文案时两种语言都要加，测试会检查占位符一致
-- `src/lib/recommend.ts` — 推荐规则（纯函数，阈值都在文件顶部）
-- `src/lib/weather.ts` — Open-Meteo 地理编码 / 预报 / 历史数据
-- `src/lib/storage.ts` — localStorage 状态与缓存
-- `src/lib/auth.ts`、`src/lib/cloud.ts` — Cognito 登录、和云端同步
-- `backend/state/` — Lambda 后端（读写每个用户的数据）
-- `infra/` — CDK：全部 AWS 资源
+Pushing to `main` deploys automatically: GitHub Actions runs the checks and AWS CodeBuild deploys. How it's built and deployed on AWS is written up in [`docs/aws-walkthrough.md`](docs/aws-walkthrough.md) (in Chinese).

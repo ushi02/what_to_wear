@@ -1,11 +1,12 @@
-import { CircleHalf, Moon, Sun } from '@phosphor-icons/react'
+import { CircleHalf, GithubLogo, Moon, Sun } from '@phosphor-icons/react'
 import { useEffect, useMemo, useState } from 'react'
+import { AccountMenu } from './components/AccountMenu'
 import { CityPicker } from './components/CityPicker'
 import { TodayView } from './components/TodayView'
 import { WardrobeView } from './components/WardrobeView'
 import { WishlistView } from './components/WishlistView'
 import { I18nContext, LANGS, makeI18n } from './i18n'
-import { signIn, signOut, useAuth } from './lib/auth'
+import { useAuth } from './lib/auth'
 import { useCloudSync } from './lib/cloud'
 import { useAppState, type Theme } from './lib/storage'
 
@@ -74,26 +75,10 @@ export default function App() {
                 </button>
               ))}
             </div>
-            {auth.ready &&
-              (auth.session ? (
-                <div className="seg small account" role="group" aria-label="Account">
-                  <span className={`sync-dot ${sync.status}`} role="status" title={t(`sync.${sync.status}`)} aria-label={t(`sync.${sync.status}`)} />
-                  <button
-                    title={auth.session.email}
-                    onClick={async () => {
-                      // 退出会作废令牌，先把还没传的改动发出去
-                      await sync.flush().catch(() => {})
-                      await signOut()
-                    }}
-                  >
-                    {t('account.signOut')}
-                  </button>
-                </div>
-              ) : (
-                <div className="seg small" role="group" aria-label="Account">
-                  <button onClick={() => signIn()}>{t('account.signIn')}</button>
-                </div>
-              ))}
+            <a className="icon-btn" href="https://github.com/ushi02/what_to_wear" target="_blank" rel="noreferrer" title={t('nav.github')} aria-label={t('nav.github')}>
+              <GithubLogo size={17} />
+            </a>
+            {auth.ready && <AccountMenu session={auth.session} status={sync.status} flush={sync.flush} />}
           </div>
         </header>
 
