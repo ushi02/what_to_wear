@@ -15,7 +15,7 @@ A quick look before you head out: it checks the weather and suggests an outfit f
 3. **Make the wardrobe yours.** It starts with a basic unisex wardrobe. In the **Wardrobe** tab:
    - Tap **Don't have** on anything you don't own, and it won't be suggested again.
    - Add your own items and pick which type each one behaves like.
-4. **Keep a wishlist.** Items that would help show up under **Worth buying**. Add them to your **Wishlist** in one tap, then tap **Got it** once you buy one and it moves into your wardrobe.
+4. **Keep a wishlist.** Items that would help show up under **Might come in handy**. Add them to your **Wishlist** in one tap, then tap **Got it** once you buy one and it moves into your wardrobe.
 5. **Settings** sit in the top bar: language (中文 / English), °C / °F, and light / dark / system theme.
 
 ### Signing in
