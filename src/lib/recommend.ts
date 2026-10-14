@@ -6,6 +6,8 @@ export const RAIN_MM = 0.5
 export const WINDY_KMH = 30
 export const HIGH_UV = 6
 export const BIG_SWING = 10
+/** 体感最高到这个温度算热天：提醒补水 */
+export const HOT = 30
 /** 晚上体感比白天最高低这么多，就提醒晚归带外套 */
 export const EVENING_DROP = 5
 export const EVENING_FROM = 19
@@ -68,7 +70,7 @@ export function summarize(day: DayWeather): Summary {
   const rainy = maxPrecipProb >= RAIN_PROB || totalPrecip > RAIN_MM
   const condition: Condition = rainy
     ? 'rain'
-    : feelsMax >= 30
+    : feelsMax >= HOT
       ? 'hot'
       : feelsMax < 8
         ? 'cold'
@@ -156,6 +158,7 @@ export function recommend(day: DayWeather, items: Item[]): Recommendation {
   }
 
   const windy = s.maxWind >= WINDY_KMH
+  const hasUmbrella = items.some((i) => i.need === 'rain' && i.owned)
   const avg = (s.feelsMin + s.feelsMax) / 2
   const needOuter = s.feelsMin < 18 || (windy && s.feelsMin < 22)
   const needMid = s.feelsMin < 13 && s.feelsMax < 20
@@ -198,14 +201,16 @@ export function recommend(day: DayWeather, items: Item[]): Recommendation {
       if (item.owned) accessories.push({ category: 'accessory', item, reason: m(`need.${need}`) })
       else if (need === 'rain') suggest(item, m('why.umbrella'))
     }
-    if (need === 'rain' && !items.some((i) => i.need === 'rain' && i.owned)) tips.push(m('tip.noUmbrella'))
+    if (need === 'rain' && !hasUmbrella) tips.push(m('tip.noUmbrella'))
   }
 
   // 提示
-  if (s.feelsMax - s.feelsMin >= BIG_SWING) {
+  // 温差提示会说"中午把外套脱掉"，所以只在推荐了外套时给
+  if (needOuter && s.feelsMax - s.feelsMin >= BIG_SWING) {
     tips.push(m('tip.swing', { d: { diff: s.feelsMax - s.feelsMin } }))
   }
-  if (s.rainy && !needOuter) tips.push(m('tip.umbrellaEnough'))
+  // 没有伞时上面已经提示"没有伞"了，不能再说"带把伞就够了"
+  if (s.rainy && !needOuter && hasUmbrella) tips.push(m('tip.umbrellaEnough'))
   // 白天不用外套、但晚上会凉下来：提醒晚归的人
   const evening = day.hours.filter((h) => h.hour >= EVENING_FROM)
   if (!needOuter && evening.length) {
@@ -214,8 +219,10 @@ export function recommend(day: DayWeather, items: Item[]): Recommendation {
   }
   if (s.maxUv >= HIGH_UV) tips.push(m('tip.uv', { u: s.maxUv }))
   if (windy) tips.push(m('tip.wind', { w: { wind: s.maxWind } }))
-  // 什么都没触发也给一句，免得这块整个消失
-  if (!tips.length) tips.push(m('tip.calm'))
+  if (s.feelsMax >= HOT) tips.push(m('tip.hot', { t: { temp: s.feelsMax } }))
+  // 什么都没触发也给一句，免得这块整个消失。
+  // 下雨天走到这里，说明伞有了、鞋也不怕水、要穿外套：雨已经安排好了，不能说"天气平稳"
+  if (!tips.length) tips.push(m(s.rainy ? 'tip.rainReady' : 'tip.calm'))
 
   return { summary: s, picks, accessories, tips, shopping }
 }

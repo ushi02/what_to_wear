@@ -114,6 +114,26 @@ describe('tips', () => {
   it('什么都没触发时也有一句', () => {
     expect(keys(day({ min: 22, max: 25 }))).toEqual(['tip.calm'])
   })
+
+  it('下雨但伞、鞋、外套都安排好了：说雨已经准备好，不说天气平稳', () => {
+    expect(keys(day({ min: 10, max: 16, prob: 90 }))).toEqual(['tip.rainReady'])
+  })
+
+  it('没有伞时不说"带把伞就够了"', () => {
+    const tips = recommend(day({ min: 22, max: 28, prob: 70 }), without('umbrella')).tips.map((t) => t.key)
+    expect(tips).toContain('tip.noUmbrella')
+    expect(tips).not.toContain('tip.umbrellaEnough')
+  })
+
+  it('没推荐外套时不提示"中午脱外套"', () => {
+    expect(keys(day({ min: 19, max: 29 }))).not.toContain('tip.swing')
+  })
+
+  it('热天提醒补水', () => {
+    const tips = keys(day({ min: 26, max: 34 }))
+    expect(tips).toContain('tip.hot')
+    expect(tips).not.toContain('tip.calm')
+  })
 })
 
 describe('compare', () => {
